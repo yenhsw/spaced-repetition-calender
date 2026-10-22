@@ -1,0 +1,47 @@
+@use 'mixins' as *;
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sr-space-lg);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--sr-primary) 6%, var(--sr-bg)) 0%,
+    var(--sr-bg) 45%,
+    color-mix(in srgb, var(--sr-review) 5%, var(--sr-bg)) 100%
+  );
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  @include card-surface;
+  padding: var(--sr-space-xl);
+
+  h1 {
+    margin: 0 0 var(--sr-space-xs);
+    font-size: var(--sr-font-size-lg);
+    color: var(--sr-text);
+  }
+}
+
+.auth-subtitle {
+  margin: 0 0 var(--sr-space-lg);
+  color: var(--sr-text-secondary);
+  font-size: var(--sr-font-size-sm);
+}
+
+.auth-footer {
+  margin: var(--sr-space-md) 0 0;
+  text-align: center;
+  color: var(--sr-text-secondary);
+  font-size: var(--sr-font-size-sm);
+
+  a {
+    color: var(--sr-primary);
+    font-weight: var(--sr-font-weight-semibold);
+    text-decoration: none;
+  }
+}

@@ -1,0 +1,22 @@
+<header class="app-header">
+  <div class="app-header__brand">
+    <a routerLink="/spaced-repetition" class="app-header__logo">Spaced Repetition</a>
+  </div>
+
+  <nav class="app-header__nav">
+    <a routerLink="/spaced-repetition" routerLinkActive="active">Calendar</a>
+    <a routerLink="/settings/notifications" routerLinkActive="active">Notifications</a>
+    @if (authService.isAdmin()) {
+      <a routerLink="/admin/users" routerLinkActive="active">Admin</a>
+    }
+  </nav>
+
+  <div class="app-header__user">
+    <span class="app-header__name">{{ authService.profile()?.display_name ?? authService.profile()?.email }}</span>
+    <button type="button" class="btn btn-ghost" (click)="signOut()">Đăng xuất</button>
+  </div>
+</header>
+
+<main class="app-main">
+  <router-outlet />
+</main>

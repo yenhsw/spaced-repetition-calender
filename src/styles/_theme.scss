@@ -1,0 +1,38 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--sr-font);
+  font-size: var(--sr-font-size-sm);
+  background: var(--sr-bg);
+  color: var(--sr-text);
+  line-height: 1.5;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: var(--sr-primary);
+}
+
+img,
+svg {
+  max-width: 100%;
+  height: auto;
+}

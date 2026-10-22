@@ -1,0 +1,318 @@
+@use 'mixins' as *;
+
+.calendar-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sr-space-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--sr-space-md);
+
+  h1 {
+    margin: 0 0 var(--sr-space-xs);
+    font-size: 1.35rem;
+    color: var(--sr-text);
+  }
+}
+
+.calendar-page__hint {
+  margin: 0;
+  color: var(--sr-text-secondary);
+  font-size: var(--sr-font-size-sm);
+  max-width: 640px;
+}
+
+.calendar-legend {
+  display: flex;
+  gap: var(--sr-space-sm);
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  font-size: var(--sr-font-size-xs);
+  font-weight: var(--sr-font-weight-semibold);
+  padding: 0.25rem 0.55rem;
+  border-radius: var(--sr-radius-full);
+  color: #fff;
+
+  &--study {
+    background: var(--sr-study);
+  }
+
+  &--review {
+    background: var(--sr-review);
+  }
+
+  &--completed {
+    background: var(--sr-success);
+  }
+
+  &--overdue {
+    background: var(--sr-danger);
+  }
+
+  &--today {
+    background: var(--sr-today);
+  }
+}
+
+.calendar-card {
+  @include card-surface;
+  padding: var(--sr-space-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.calendar-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.75);
+  z-index: 10;
+  border-radius: var(--sr-radius-lg);
+}
+
+// FullCalendar theme overrides
+.sr-calendar {
+  .fc {
+    --fc-border-color: var(--sr-border);
+    --fc-page-bg-color: var(--sr-surface);
+    --fc-neutral-bg-color: var(--sr-bg);
+    --fc-today-bg-color: var(--sr-primary-soft);
+    font-family: var(--sr-font);
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1.05rem;
+    font-weight: var(--sr-font-weight-bold);
+    color: var(--sr-text);
+  }
+
+  .fc .fc-button {
+    border-radius: var(--sr-radius-sm);
+    font-size: var(--sr-font-size-xs);
+    font-weight: var(--sr-font-weight-semibold);
+    text-transform: capitalize;
+  }
+
+  .fc .fc-button-primary {
+    background: var(--sr-primary);
+    border-color: var(--sr-primary);
+  }
+
+  .fc .fc-daygrid-day-number {
+    font-size: var(--sr-font-size-xs);
+    color: var(--sr-text-secondary);
+    padding: 0.35rem;
+  }
+
+  .fc .fc-more-link {
+    font-size: 0.7rem;
+    font-weight: var(--sr-font-weight-semibold);
+    color: var(--sr-primary);
+  }
+
+  .fc-event {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin-bottom: 1px;
+  }
+
+  .fc-daygrid-event-dot {
+    display: none;
+  }
+}
+
+// Custom event chips
+.sr-event {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.1rem 0.25rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  cursor: pointer;
+
+  &__icon {
+    flex-shrink: 0;
+    font-size: 0.65rem;
+    opacity: 0.9;
+  }
+
+  &__badge {
+    flex-shrink: 0;
+    font-weight: var(--sr-font-weight-bold);
+    font-size: 0.65rem;
+    padding: 0.05rem 0.3rem;
+    border-radius: var(--sr-radius-full);
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  &__title {
+    @include truncate;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &--study {
+    background: var(--sr-study-soft);
+    color: var(--sr-study);
+    border-left: 3px solid var(--sr-study);
+  }
+
+  &--review {
+    background: var(--sr-review-soft);
+    color: #b45309;
+    border-left: 3px solid var(--sr-review);
+  }
+
+  &--today {
+    background: var(--sr-today-soft);
+    color: var(--sr-today);
+    border-left: 3px solid var(--sr-today);
+  }
+
+  &--completed {
+    background: var(--sr-success-soft);
+    color: var(--sr-success);
+    border-left: 3px solid var(--sr-success);
+  }
+
+  &--overdue {
+    background: var(--sr-danger-soft);
+    color: var(--sr-danger);
+    border-left: 3px solid var(--sr-danger);
+  }
+
+  &--compact {
+    justify-content: center;
+    padding: 0;
+    width: 8px;
+    height: 8px;
+    min-height: 8px;
+    border-radius: 50%;
+    border-left: none;
+
+    .sr-event__icon,
+    .sr-event__badge,
+    .sr-event__title {
+      display: none;
+    }
+  }
+}
+
+@include mobile-only {
+  .sr-calendar .fc .fc-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sr-space-sm);
+  }
+
+  .sr-calendar .fc .fc-toolbar-chunk {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .sr-calendar .fc .fc-daygrid-day-frame {
+    min-height: 3.5rem;
+  }
+}
+
+.daily-events-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sr-space-md);
+}
+
+.daily-events-section__title {
+  margin: 0 0 var(--sr-space-sm);
+  font-size: var(--sr-font-size-xs);
+  font-weight: var(--sr-font-weight-bold);
+  letter-spacing: 0.06em;
+  color: var(--sr-text-secondary);
+}
+
+.daily-events-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    margin-bottom: var(--sr-space-sm);
+  }
+}
+
+.daily-event-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sr-space-sm);
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--sr-border);
+  border-radius: var(--sr-radius-sm);
+  background: var(--sr-surface);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--sr-bg);
+  }
+
+  &--study {
+    border-left: 3px solid var(--sr-study);
+  }
+
+  &--review {
+    border-left: 3px solid var(--sr-review);
+  }
+
+  &--today {
+    border-left: 3px solid var(--sr-today);
+  }
+
+  &--completed {
+    border-left: 3px solid var(--sr-success);
+  }
+
+  &--overdue {
+    border-left: 3px solid var(--sr-danger);
+  }
+
+  &__icon {
+    font-size: 1rem;
+    line-height: 1;
+    margin-top: 0.1rem;
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__badge {
+    display: block;
+    font-size: var(--sr-font-size-sm);
+    font-weight: var(--sr-font-weight-bold);
+    color: var(--sr-review);
+    margin-top: 0.15rem;
+  }
+
+  &__title {
+    font-weight: var(--sr-font-weight-semibold);
+    font-size: var(--sr-font-size-sm);
+    @include truncate;
+  }
+
+  &__meta {
+    font-size: var(--sr-font-size-xs);
+    color: var(--sr-text-secondary);
+  }
+}

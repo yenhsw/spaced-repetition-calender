@@ -1,0 +1,59 @@
+<div class="schedule-timeline" role="list" aria-label="Review schedule timeline">
+  @for (review of reviews; track review.id; let last = $last) {
+    <div
+      class="timeline-item"
+      role="listitem"
+      [class.timeline-item--done]="getMarker(review) === 'done'"
+      [class.timeline-item--current]="getMarker(review) === 'current'"
+      [class.timeline-item--upcoming]="getMarker(review) === 'upcoming'"
+    >
+      <div class="timeline-item__track" aria-hidden="true">
+        <span class="timeline-item__symbol">{{ getMarkerSymbol(review) }}</span>
+        @if (!last) {
+          <span class="timeline-item__line"></span>
+        }
+      </div>
+
+      <div class="timeline-item__card">
+        <div class="timeline-item__content">
+          <div class="timeline-item__main">
+            <span class="timeline-item__offset">{{ reviewScheduleService.offsetLabel(review.day_offset) }}</span>
+            @if (getMarkerLabel(review)) {
+              <span class="timeline-item__badge" [attr.aria-label]="getMarkerLabel(review) + ' step'">
+                {{ getMarkerLabel(review) }}
+              </span>
+            }
+            @if (getStatusLabel(review)) {
+              <span class="timeline-item__status" [class]="'timeline-item__status--' + getStatusClass(review)">
+                {{ getStatusLabel(review) }}
+              </span>
+            }
+          </div>
+          <span class="timeline-item__date">{{ formatDate(review.review_date) }}</span>
+          <span class="timeline-item__step">Step {{ review.step_order }}</span>
+        </div>
+
+        @if (canEdit(review)) {
+          <div class="timeline-item__actions">
+            <button
+              type="button"
+              class="btn btn-sm btn-ghost"
+              [attr.aria-label]="'Replace ' + reviewScheduleService.offsetLabel(review.day_offset)"
+              (click)="replaceStep.emit(review)"
+            >
+              Replace
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-danger"
+              [attr.aria-label]="'Delete ' + reviewScheduleService.offsetLabel(review.day_offset)"
+              (click)="deleteStep.emit(review)"
+            >
+              Delete
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

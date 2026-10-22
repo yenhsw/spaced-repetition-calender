@@ -1,0 +1,408 @@
+<div class="calendar-page">
+  <div class="calendar-page__header">
+    <div>
+      <h1>Lịch học Spaced Repetition</h1>
+      <p class="calendar-page__hint">
+        @if (isMobileView()) {
+          Chạm ngày để xem danh sách event. Chạm event để xem chi tiết.
+        } @else {
+          Click ngày để thêm Study Topic. Click event để xem Topic hoặc Review Detail.
+        }
+      </p>
+    </div>
+
+    <div class="calendar-legend" role="list" aria-label="Event legend">
+      <span class="legend-item legend-item--study" role="listitem">Study</span>
+      <span class="legend-item legend-item--review" role="listitem">Review</span>
+      <span class="legend-item legend-item--today" role="listitem">Today</span>
+      <span class="legend-item legend-item--completed" role="listitem">Completed</span>
+      <span class="legend-item legend-item--overdue" role="listitem">Overdue</span>
+    </div>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">{{ errorMessage() }}</div>
+  }
+
+  <div class="calendar-card">
+    @if (loading()) {
+      <div class="calendar-loading">Đang tải...</div>
+    }
+
+    <div
+      id="study-calendar"
+      class="sr-calendar fc fc-media-screen fc-direction-ltr fc-theme-standard"
+    >
+      <full-calendar [options]="calendarOptions" [events]="events()"></full-calendar>
+    </div>
+  </div>
+</div>
+
+@if (modalMode()) {
+  <div class="modal-backdrop" (click)="closeModal()"></div>
+  <div class="modal modal--wide" role="dialog">
+    @switch (modalMode()) {
+      @case ('daily-events') {
+        <div class="modal__header">
+          <h2>{{ formatDailyListDate(selectedDate() ?? '') }}</h2>
+          <button type="button" class="modal__close" aria-label="Close daily list" (click)="closeModal()">×</button>
+        </div>
+        <div class="modal__body daily-events-panel">
+          @if (dailyEvents().length === 0) {
+            <p class="calendar-page__hint">Không có event trong ngày này.</p>
+          } @else {
+            @if (getDailyStudyEvents().length > 0) {
+              <section class="daily-events-section">
+                <h3 class="daily-events-section__title">STUDY</h3>
+                <ul class="daily-events-list">
+                  @for (event of getDailyStudyEvents(); track event.id) {
+                    <li>
+                      <button
+                        type="button"
+                        [class]="getDailyEventClass(event)"
+                        [attr.aria-label]="getDailyEventAriaLabel(event)"
+                        (click)="openDailyEventItem(event)"
+                      >
+                        <span class="daily-event-item__icon" aria-hidden="true">{{ getDailyEventIcon(event) }}</span>
+                        <span class="daily-event-item__body">
+                          <span class="daily-event-item__title">{{ event.extendedProps.topicTitle }}</span>
+                          <span class="daily-event-item__meta">Study session</span>
+                        </span>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              </section>
+            }
+
+            @if (getDailyReviewEvents().length > 0) {
+              <section class="daily-events-section">
+                <h3 class="daily-events-section__title">REVIEWS</h3>
+                <ul class="daily-events-list">
+                  @for (event of getDailyReviewEvents(); track event.id) {
+                    <li>
+                      <button
+                        type="button"
+                        [class]="getDailyEventClass(event)"
+                        [attr.aria-label]="getDailyEventAriaLabel(event)"
+                        (click)="openDailyEventItem(event)"
+                      >
+                        <span class="daily-event-item__icon" aria-hidden="true">{{ getDailyEventIcon(event) }}</span>
+                        <span class="daily-event-item__body">
+                          <span class="daily-event-item__title">{{ event.extendedProps.topicTitle }}</span>
+                          <span class="daily-event-item__badge">{{ event.extendedProps.badgeText }}</span>
+                        </span>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              </section>
+            }
+          }
+
+          @if (!readOnly) {
+            <div class="modal__footer">
+              <button
+                type="button"
+                class="btn btn-primary btn-block"
+                aria-label="Add study topic for this day"
+                (click)="openCreateTopic(selectedDate() ?? '')"
+              >
+                Add Study Topic
+              </button>
+            </div>
+          }
+        </div>
+      }
+
+      @case ('create-topic') {
+        <div class="modal__header">
+          <h2>Add Study Topic</h2>
+          <button type="button" class="modal__close" (click)="closeModal()">×</button>
+        </div>
+        <form [formGroup]="topicForm" (ngSubmit)="submitCreateTopic()" class="modal__body">
+          <div class="form-group">
+            <label for="title">Title <sup class="required">*</sup></label>
+            <input id="title" type="text" formControlName="title" placeholder="English - Daily Routine" />
+          </div>
+          <div class="form-group">
+            <label for="study_date">Study Date <sup class="required">*</sup></label>
+            <input id="study_date" type="date" formControlName="study_date" />
+          </div>
+          <div class="form-group">
+            <label for="subject">Subject</label>
+            <input id="subject" type="text" formControlName="subject" />
+          </div>
+          <div class="form-group">
+            <label for="notes">Notes</label>
+            <textarea id="notes" formControlName="notes" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="resource_url">Resource URL</label>
+            <input id="resource_url" type="url" formControlName="resource_url" />
+          </div>
+          <div class="modal__footer">
+            <button type="button" class="btn btn-ghost" (click)="closeModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="loading()">Create Topic</button>
+          </div>
+        </form>
+      }
+
+      @case ('topic-detail') {
+        @if (selectedTopic(); as topic) {
+          <div class="modal__header">
+            <h2>Topic Detail · {{ topic.title }}</h2>
+            <button type="button" class="modal__close" (click)="closeModal()">×</button>
+          </div>
+          <div class="modal__body">
+            <dl class="detail-list">
+              <dt>Title</dt>
+              <dd>{{ topic.title }}</dd>
+              <dt>Study Date</dt>
+              <dd>{{ formatDate(topic.study_date) }}</dd>
+              <dt>Subject</dt>
+              <dd>{{ topic.subject || '—' }}</dd>
+              <dt>Notes</dt>
+              <dd>{{ topic.description || '—' }}</dd>
+              <dt>Resource</dt>
+              <dd>
+                @if (topic.resource_url) {
+                  <a [href]="topic.resource_url" target="_blank" rel="noopener">{{ topic.resource_url }}</a>
+                } @else {
+                  —
+                }
+              </dd>
+            </dl>
+
+            @if (getTopicProgress(); as progress) {
+              <section class="progress-section">
+                <h3>Review Progress</h3>
+                <div class="progress-grid">
+                  <div class="progress-card">
+                    <span class="progress-label">Completed</span>
+                    <span class="progress-value">{{ progress.completedCount }} / {{ progress.totalSteps }}</span>
+                  </div>
+                  <div class="progress-card">
+                    <span class="progress-label">Current Step</span>
+                    <span class="progress-value">{{ progress.currentStepLabel }}</span>
+                  </div>
+                  <div class="progress-card">
+                    <span class="progress-label">Next Review</span>
+                    <span class="progress-value">
+                      @if (progress.nextReviewLabel) {
+                        {{ progress.nextReviewLabel }}
+                        @if (progress.nextReviewDate) {
+                          · {{ formatDate(progress.nextReviewDate) }}
+                        }
+                      } @else {
+                        —
+                      }
+                    </span>
+                  </div>
+                </div>
+              </section>
+            }
+
+            <section class="schedule-section">
+              <h3>Full Schedule</h3>
+              <app-schedule-timeline
+                [reviews]="getSortedReviews()"
+                [currentStepOffset]="currentStepOffset() ?? 0"
+                [readOnly]="true"
+              />
+            </section>
+
+            @if (!readOnly) {
+              <div class="modal__actions">
+                <button type="button" class="btn btn-ghost" (click)="openEditTopic()">Edit Topic</button>
+                <button type="button" class="btn btn-primary" (click)="openEditSchedule()">Edit Schedule</button>
+                <button type="button" class="btn btn-danger" (click)="deleteTopic()">Delete Topic</button>
+              </div>
+            }
+          </div>
+        }
+      }
+
+      @case ('review-detail') {
+        @if (selectedTopic(); as topic) {
+          @if (selectedReview(); as review) {
+            <div class="modal__header">
+              <h2>Review Detail · {{ reviewScheduleService.offsetLabel(review.day_offset) }}</h2>
+              <button type="button" class="modal__close" (click)="closeModal()">×</button>
+            </div>
+            <div class="modal__body">
+              <dl class="detail-list">
+                <dt>Topic</dt>
+                <dd>{{ topic.title }}</dd>
+                <dt>Study Date</dt>
+                <dd>{{ formatDate(topic.study_date) }}</dd>
+                <dt>Step</dt>
+                <dd>{{ review.step_order }} / {{ getTotalSteps() }}</dd>
+                <dt>Interval</dt>
+                <dd>{{ reviewScheduleService.offsetLabel(review.day_offset) }}</dd>
+                <dt>Scheduled Date</dt>
+                <dd>{{ formatDate(review.review_date) }}</dd>
+                <dt>Status</dt>
+                <dd>
+                  <span class="badge" [class]="'badge--' + getReviewUiState(review).toLowerCase()">
+                    {{ getReviewUiState(review) }}
+                  </span>
+                  <span class="badge badge-db">{{ review.status }}</span>
+                </dd>
+                @if (review.completed_at) {
+                  <dt>Completed At</dt>
+                  <dd>{{ formatDate(review.completed_at.split('T')[0]) }}</dd>
+                }
+              </dl>
+
+              @if (!readOnly && review.status === ReviewStatus.PENDING) {
+                <div class="modal__actions">
+                  <button type="button" class="btn btn-success" (click)="completeReview()">
+                    Mark as Completed
+                  </button>
+                  <button type="button" class="btn btn-ghost" (click)="openEditSchedule()">Edit Schedule</button>
+                </div>
+              }
+            </div>
+          }
+        }
+      }
+
+      @case ('edit-schedule') {
+        @if (selectedTopic(); as topic) {
+          <div class="modal__header">
+            <h2>Edit Schedule · {{ topic.title }}</h2>
+            <button type="button" class="modal__close" (click)="backToTopicDetail()">×</button>
+          </div>
+          <div class="modal__body">
+            <div class="form-group current-step-picker">
+              <label for="currentStep">Current Step <sup class="required">*</sup></label>
+              <select
+                id="currentStep"
+                [value]="currentStepOffset() ?? ''"
+                (change)="onCurrentStepChange(+$any($event.target).value)"
+              >
+                @for (opt of getCurrentStepOptions(); track opt.offset) {
+                  <option [value]="opt.offset">{{ opt.label }}</option>
+                }
+              </select>
+            </div>
+
+            @if (scheduleError()) {
+              <div class="alert alert-error">{{ scheduleError() }}</div>
+            }
+
+            <app-schedule-timeline
+              [reviews]="getSortedReviews()"
+              [currentStepOffset]="currentStepOffset() ?? 0"
+              [readOnly]="readOnly"
+              (replaceStep)="openReplaceStep($event)"
+              (deleteStep)="deleteFutureStep($event)"
+            />
+
+            @if (!readOnly) {
+              <div class="edit-schedule__actions">
+                <button type="button" class="btn btn-primary" (click)="openAddStep()">Add Step</button>
+                <button type="button" class="btn btn-ghost" (click)="backToTopicDetail()">Back to Topic</button>
+              </div>
+            }
+          </div>
+        }
+      }
+
+      @case ('edit-topic') {
+        <div class="modal__header">
+          <h2>Edit Topic</h2>
+          <button type="button" class="modal__close" (click)="backFromEditTopic()">×</button>
+        </div>
+        <form [formGroup]="editTopicForm" (ngSubmit)="submitEditTopic()" class="modal__body">
+          <div class="form-group">
+            <label for="editTitle">Title</label>
+            <input id="editTitle" type="text" formControlName="title" />
+          </div>
+          <div class="form-group">
+            <label for="editSubject">Subject</label>
+            <input id="editSubject" type="text" formControlName="subject" />
+          </div>
+          <div class="form-group">
+            <label for="editNotes">Notes</label>
+            <textarea id="editNotes" formControlName="notes" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="editResourceUrl">Resource URL</label>
+            <input id="editResourceUrl" type="url" formControlName="resource_url" />
+          </div>
+          <div class="modal__footer">
+            <button type="button" class="btn btn-ghost" (click)="backFromEditTopic()">Back</button>
+            <button type="submit" class="btn btn-primary" [disabled]="loading()">Save</button>
+          </div>
+        </form>
+      }
+
+      @case ('add-step') {
+        <div class="modal__header">
+          <h2>Add Step</h2>
+          <button type="button" class="modal__close" (click)="backFromScheduleAction()">×</button>
+        </div>
+        <form [formGroup]="addStepForm" (ngSubmit)="submitAddStep()" class="modal__body add-step-form">
+          <div class="form-group">
+            <label>Current Step</label>
+            <div class="add-step-form__readonly">
+              {{ reviewScheduleService.offsetLabel(currentStepOffset() ?? 0) }}
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="addOffset">Add future step</label>
+            <div class="add-step-form__offset-input">
+              <span>N +</span>
+              <input id="addOffset" type="number" formControlName="dayOffset" min="1" />
+            </div>
+          </div>
+          @if (getAddStepPreview(); as preview) {
+            <div class="add-step-form__preview" [class.add-step-form__preview--invalid]="!preview.valid">
+              <div class="preview-row">
+                <span class="preview-label">Interval:</span>
+                <span>{{ preview.intervalLabel }}</span>
+              </div>
+              @if (preview.reviewDate) {
+                <div class="preview-row">
+                  <span class="preview-label">Review Date:</span>
+                  <span>{{ formatDate(preview.reviewDate) }}</span>
+                </div>
+              }
+              @for (err of preview.errors; track err) {
+                <span class="field-error">{{ err }}</span>
+              }
+            </div>
+          }
+          <div class="modal__footer">
+            <button type="button" class="btn btn-ghost" (click)="backFromScheduleAction()">Back</button>
+            <button type="submit" class="btn btn-primary" [disabled]="loading() || !getAddStepPreview()?.valid">
+              Add Step
+            </button>
+          </div>
+        </form>
+      }
+
+      @case ('replace-step') {
+        <div class="modal__header">
+          <h2>Replace Step</h2>
+          <button type="button" class="modal__close" (click)="backFromScheduleAction()">×</button>
+        </div>
+        <form [formGroup]="replaceStepForm" (ngSubmit)="submitReplaceStep()" class="modal__body">
+          <div class="form-group">
+            <label for="replaceOffset">New interval (N + ?)</label>
+            <input id="replaceOffset" type="number" formControlName="dayOffset" min="1" />
+          </div>
+          @if (scheduleError()) {
+            <div class="alert alert-error">{{ scheduleError() }}</div>
+          }
+          <div class="modal__footer">
+            <button type="button" class="btn btn-ghost" (click)="backFromScheduleAction()">Back</button>
+            <button type="submit" class="btn btn-primary" [disabled]="loading()">Replace</button>
+          </div>
+        </form>
+      }
+    }
+  </div>
+}

@@ -1,0 +1,118 @@
+<div class="settings-page">
+  <header class="settings-page__header">
+    <div>
+      <h1>Notification Settings</h1>
+      <p class="settings-page__hint">
+        Reminders are sent server-side on your schedule. This page only saves your preferences.
+      </p>
+      @if (isAdminView) {
+        <p class="settings-page__admin-note">Admin view — managing another user's notification settings.</p>
+      }
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">{{ errorMessage() }}</div>
+  }
+  @if (successMessage()) {
+    <div class="alert alert-success">{{ successMessage() }}</div>
+  }
+
+  @if (loading()) {
+    <p class="settings-page__hint">Loading...</p>
+  } @else {
+    <div class="settings-card">
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <div class="form-group">
+          <label for="channel">Reminder channel</label>
+          <select id="channel" formControlName="channel" aria-describedby="channel-hint">
+            <option [value]="NotificationChannel.NONE">No notification</option>
+            <option [value]="NotificationChannel.EMAIL">Email only</option>
+            <option [value]="NotificationChannel.DISCORD">Discord only</option>
+            <option [value]="NotificationChannel.BOTH">Email + Discord</option>
+          </select>
+          <span id="channel-hint" class="field-hint">
+            Choose how you want to receive review reminders for due reviews.
+          </span>
+        </div>
+
+        @if (showEmailFields()) {
+          <fieldset class="settings-fieldset">
+            <legend>Email</legend>
+            <div class="form-group">
+              <label for="email_destination">Destination email</label>
+              <input
+                id="email_destination"
+                type="email"
+                formControlName="email_destination"
+                autocomplete="email"
+                placeholder="you@example.com"
+              />
+            </div>
+            <div class="form-group">
+              <label for="email_reminder_time">Reminder time</label>
+              <input id="email_reminder_time" type="time" formControlName="email_reminder_time" />
+              <span class="field-hint">Local time in your selected timezone.</span>
+            </div>
+            <div class="form-group">
+              <label for="email_timezone">Timezone</label>
+              <input
+                id="email_timezone"
+                type="text"
+                formControlName="email_timezone"
+                placeholder="Asia/Ho_Chi_Minh"
+              />
+              <span class="field-hint">IANA timezone, e.g. Asia/Ho_Chi_Minh, UTC, America/New_York</span>
+            </div>
+          </fieldset>
+        }
+
+        @if (showDiscordFields()) {
+          <fieldset class="settings-fieldset">
+            <legend>Discord</legend>
+            <div class="form-group">
+              <label for="discord_webhook_url">Webhook URL</label>
+              <input
+                id="discord_webhook_url"
+                type="url"
+                formControlName="discord_webhook_url"
+                placeholder="https://discord.com/api/webhooks/..."
+                autocomplete="off"
+              />
+              <span class="field-hint">
+                Create a webhook in your Discord channel settings. Only you can see this URL (RLS protected).
+              </span>
+            </div>
+          </fieldset>
+        }
+
+        <div class="settings-page__actions">
+          <button type="submit" class="btn btn-primary" [disabled]="saving()" aria-label="Save notification settings">
+            {{ saving() ? 'Saving...' : 'Save settings' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <section class="settings-logs">
+      <h2>Recent delivery log</h2>
+      <p class="field-hint">Read-only history written by the scheduled reminder job.</p>
+      @if (logs().length === 0) {
+        <p class="settings-page__hint">No notifications sent yet.</p>
+      } @else {
+        <ul class="log-list">
+          @for (log of logs(); track log.id) {
+            <li class="log-list__item" [class.log-list__item--failed]="log.status === 'FAILED'">
+              <span class="log-list__channel">{{ log.channel }}</span>
+              <span class="log-list__date">{{ log.notification_date }}</span>
+              <span class="log-list__status">{{ log.status }}</span>
+              @if (log.error_message) {
+                <span class="log-list__error">{{ log.error_message }}</span>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+</div>

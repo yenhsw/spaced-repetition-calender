@@ -1,0 +1,10 @@
+# Supabase local config (Edge Functions + optional cron)
+# See: https://supabase.com/docs/guides/functions
+
+[functions.send-daily-reminders]
+verify_jwt = false
+
+# Schedule hourly — matches user reminder_time hour in their timezone.
+# Configure in Supabase Dashboard → Edge Functions → Schedules after deploy:
+#   cron: 0 * * * *
+#   Authorization: Bearer <CRON_SECRET>

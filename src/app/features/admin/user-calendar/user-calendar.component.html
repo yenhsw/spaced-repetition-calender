@@ -1,0 +1,10 @@
+<div class="user-calendar-page">
+  <a routerLink="/admin/users" class="back-link">← Back to Admin</a>
+
+  <div class="user-calendar-page__banner">
+    <h1>Calendar · {{ profileName || userId() }}</h1>
+    <p>Admin view — quản lý Topic và Review Schedule cho user này.</p>
+  </div>
+
+  <app-study-calendar [userId]="userId()" />
+</div>

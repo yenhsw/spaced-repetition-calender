@@ -1,0 +1,102 @@
+.settings-page__header {
+  margin-bottom: var(--sr-space-md);
+
+  h1 {
+    margin: 0 0 var(--sr-space-xs);
+    font-size: 1.35rem;
+  }
+}
+
+.settings-page__hint {
+  margin: 0;
+  color: var(--sr-text-secondary);
+  font-size: var(--sr-font-size-sm);
+}
+
+.settings-page__admin-note {
+  margin: var(--sr-space-sm) 0 0;
+  color: var(--sr-review);
+  font-size: var(--sr-font-size-sm);
+  font-weight: var(--sr-font-weight-semibold);
+}
+
+.settings-card {
+  background: var(--sr-surface);
+  border: 1px solid var(--sr-border);
+  border-radius: var(--sr-radius-lg);
+  box-shadow: var(--sr-shadow-sm);
+  padding: var(--sr-space-lg);
+  margin-bottom: var(--sr-space-lg);
+}
+
+.settings-fieldset {
+  border: 1px solid var(--sr-border);
+  border-radius: var(--sr-radius-md);
+  padding: var(--sr-space-md);
+  margin: 0 0 var(--sr-space-md);
+
+  legend {
+    font-weight: var(--sr-font-weight-semibold);
+    padding: 0 var(--sr-space-xs);
+  }
+}
+
+.settings-page__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.settings-logs {
+  h2 {
+    margin: 0 0 var(--sr-space-xs);
+    font-size: var(--sr-font-size-md);
+  }
+}
+
+.log-list {
+  list-style: none;
+  margin: var(--sr-space-md) 0 0;
+  padding: 0;
+}
+
+.log-list__item {
+  display: grid;
+  grid-template-columns: 5rem 7rem 5rem 1fr;
+  gap: var(--sr-space-sm);
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--sr-border);
+  border-radius: var(--sr-radius-sm);
+  margin-bottom: var(--sr-space-sm);
+  font-size: var(--sr-font-size-sm);
+
+  &--failed {
+    border-color: color-mix(in srgb, var(--sr-danger) 30%, var(--sr-border));
+    background: var(--sr-danger-soft);
+  }
+}
+
+.log-list__channel {
+  font-weight: var(--sr-font-weight-semibold);
+}
+
+.log-list__status {
+  text-transform: uppercase;
+  font-size: var(--sr-font-size-xs);
+  font-weight: var(--sr-font-weight-bold);
+}
+
+.log-list__error {
+  grid-column: 1 / -1;
+  color: var(--sr-danger);
+  font-size: var(--sr-font-size-xs);
+}
+
+@media (max-width: 640px) {
+  .log-list__item {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .log-list__error {
+    grid-column: 1 / -1;
+  }
+}

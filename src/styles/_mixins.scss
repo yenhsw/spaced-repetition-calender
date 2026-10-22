@@ -1,0 +1,32 @@
+@use 'breakpoints' as *;
+
+@mixin focus-ring($color: var(--sr-primary)) {
+  outline: none;
+  border-color: $color;
+  box-shadow: 0 0 0 3px color-mix(in srgb, $color 18%, transparent);
+}
+
+@mixin card-surface {
+  background: var(--sr-surface);
+  border: 1px solid var(--sr-border);
+  border-radius: var(--sr-radius-lg);
+  box-shadow: var(--sr-shadow-md);
+}
+
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin mobile-only {
+  @include down(tablet) {
+    @content;
+  }
+}
+
+@mixin desktop-only {
+  @include up(tablet) {
+    @content;
+  }
+}
