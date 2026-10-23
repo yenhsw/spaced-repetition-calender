@@ -213,6 +213,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
   };
 
   private bodyScrollLockY = 0;
+  private scrollLockPrepared = false;
 
   constructor() {
     effect(() => {
@@ -636,6 +637,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     const dayEvents = this.events().filter((event) => event.start.startsWith(dateISO));
     this.selectedDate.set(dateISO);
     this.dailyEvents.set(dayEvents);
+    this.prepareModalScrollLock();
     this.modalMode.set('daily-events');
   }
 
@@ -651,6 +653,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
       study_end_time: DEFAULT_STUDY_END_TIME,
       reminder_time: DEFAULT_TOPIC_REMINDER_TIME,
     });
+    this.prepareModalScrollLock();
     this.modalMode.set('create-topic');
   }
 
@@ -664,6 +667,9 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     topicId: string,
     reviewId?: string,
   ): Promise<void> {
+    if (!this.modalMode()) {
+      this.prepareModalScrollLock();
+    }
     this.selectedEventType.set(eventType);
     this.selectedReview.set(null);
     this.scheduleError.set(null);
@@ -856,6 +862,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
   }
 
   async handleEventClick(arg: EventClickArg): Promise<void> {
+    arg.jsEvent.preventDefault();
     const eventType = arg.event.extendedProps['eventType'] as CalendarEventType;
     const topicId = arg.event.extendedProps['topicId'] as string;
     const reviewId = arg.event.extendedProps['reviewId'] as string | undefined;
@@ -1011,18 +1018,33 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     }
   }
 
+  private prepareModalScrollLock(): void {
+    this.bodyScrollLockY = window.scrollY;
+    this.scrollLockPrepared = true;
+  }
+
   private lockBodyScroll(): void {
     if (document.body.classList.contains('sr-modal-open')) return;
-    this.bodyScrollLockY = window.scrollY;
+    if (!this.scrollLockPrepared) {
+      this.bodyScrollLockY = window.scrollY;
+    }
+    this.scrollLockPrepared = false;
     document.body.style.top = `-${this.bodyScrollLockY}px`;
     document.body.classList.add('sr-modal-open');
   }
 
   private unlockBodyScroll(): void {
     if (!document.body.classList.contains('sr-modal-open')) return;
+    const scrollY = this.bodyScrollLockY;
     document.body.classList.remove('sr-modal-open');
     document.body.style.top = '';
-    window.scrollTo(0, this.bodyScrollLockY);
+    const active = document.activeElement;
+    if (active instanceof HTMLElement) {
+      active.blur();
+    }
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollY, left: 0, behavior: 'instant' });
+    });
   }
 
   openEditTopic(): void {

@@ -599,18 +599,16 @@
             </section>
           </div>
           @if (!readOnly) {
-            <div class="modal__footer modal__footer--between">
-              <button type="button" class="btn btn-danger" (click)="deleteTopic()">
+            <div class="modal__footer modal__footer--compact-actions">
+              <button type="button" class="btn btn-ghost btn-sm" (click)="openEditTopic()">
+                {{ 'calendar.btn.editTopic' | translate }}
+              </button>
+              <button type="button" class="btn btn-primary btn-sm" (click)="openEditSchedule()">
+                {{ 'calendar.btn.editSchedule' | translate }}
+              </button>
+              <button type="button" class="btn btn-danger btn-sm" (click)="deleteTopic()">
                 {{ 'calendar.btn.deleteTopic' | translate }}
               </button>
-              <div class="modal__footer-group">
-                <button type="button" class="btn btn-ghost" (click)="openEditTopic()">
-                  {{ 'calendar.btn.editTopic' | translate }}
-                </button>
-                <button type="button" class="btn btn-primary" (click)="openEditSchedule()">
-                  {{ 'calendar.btn.editSchedule' | translate }}
-                </button>
-              </div>
             </div>
           }
         }
