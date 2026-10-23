@@ -173,16 +173,12 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     dayOffset: [20, [Validators.required, Validators.min(1)]],
   });
 
-  protected readonly dateFilterForm = this.fb.nonNullable.group({
-    fromDate: ['', Validators.required],
-    toDate: ['', Validators.required],
-  });
-
-  protected readonly dateFilterActive = signal(false);
-  protected readonly dateFilterError = signal<string | null>(null);
   protected readonly mobileListMode = signal<'week' | 'month' | 'list'>('month');
   protected readonly mobileListAnchor = signal<DateOnly>(todayDateOnly());
   protected readonly selectedMobileDay = signal<DateOnly | null>(null);
+  protected readonly monthPickerOpen = signal(false);
+  protected readonly monthPickerYear = signal(new Date().getFullYear());
+  protected readonly monthPickerSelectedMonth = signal(new Date().getMonth() + 1);
 
   private readonly defaultHeaderToolbar = {
     left: 'prev,next today',
@@ -241,8 +237,6 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
       this.errorMessage.set(this.i18n.t('calendar.error.noUser'));
     }
 
-    this.initDateFilterDefaults();
-
     if (typeof window !== 'undefined') {
       const mediaQuery = window.matchMedia(CALENDAR_MOBILE_MQ);
       this.isMobileView.set(mediaQuery.matches);
@@ -262,6 +256,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
         void this.refreshVerticalListEvents();
       } else {
         this.applyResponsiveCalendarView(false);
+        this.bindDesktopMonthPicker();
       }
     });
   }
@@ -273,96 +268,72 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
   async handleDatesSet(arg: { start: Date; end: Date }): Promise<void> {
     if (!this.effectiveUserId) return;
 
-    if (this.dateFilterActive()) {
-      const { fromDate, toDate } = this.dateFilterForm.getRawValue();
-      await this.loadEvents(fromDate, toDate);
-      return;
-    }
-
     const { fromDate, toDate } = calendarViewRangeInclusive(arg.start, arg.end);
     await this.loadEvents(fromDate, toDate);
-  }
-
-  async applyDateFilter(): Promise<void> {
-    if (this.dateFilterForm.invalid) {
-      this.dateFilterForm.markAllAsTouched();
-      return;
-    }
-
-    const { fromDate, toDate } = this.dateFilterForm.getRawValue();
-    if (fromDate > toDate) {
-      this.dateFilterError.set(this.i18n.t('calendar.error.dateFilterRange'));
-      return;
-    }
-
-    this.dateFilterError.set(null);
-    this.dateFilterActive.set(true);
-
-    if (this.isMobileView()) {
-      this.mobileListMode.set('list');
-    }
-
-    await this.loadEvents(fromDate, toDate);
-
-    const sameMonth = fromDate.slice(0, 7) === toDate.slice(0, 7);
-    if (sameMonth && !this.isMobileView()) {
-      this.applyDateFilterToCalendar(fromDate, toDate);
-      this.calendarComponent?.getApi()?.render();
-    }
-  }
-
-  clearDateFilter(): void {
-    this.dateFilterActive.set(false);
-    this.dateFilterError.set(null);
-    this.initDateFilterDefaults();
-
-    if (this.isMobileView()) {
-      this.mobileListMode.set('month');
-      this.mobileListAnchor.set(todayDateOnly());
-      void this.refreshVerticalListEvents();
-      return;
-    }
-
-    const api = this.calendarComponent?.getApi();
-    if (api) {
-      api.setOption('visibleRange', undefined);
-      api.setOption('validRange', undefined);
-      api.setOption('headerToolbar', { ...this.defaultHeaderToolbar });
-      api.changeView('dayGridMonth');
-      api.today();
-    }
-  }
-
-  openDatePicker(event: Event): void {
-    const input = event.target;
-    if (input instanceof HTMLInputElement && typeof input.showPicker === 'function') {
-      try {
-        input.showPicker();
-      } catch {
-        /* browser may block if not from user gesture — ignore */
-      }
-    }
-  }
-
-  dateFilterActiveLabel(): string {
-    const { fromDate, toDate } = this.dateFilterForm.getRawValue();
-    return this.i18n.t('calendar.filter.active', {
-      from: this.formatDate(fromDate),
-      to: this.formatDate(toDate),
-    });
-  }
-
-  dateFilterSpansMonths(): boolean {
-    if (!this.dateFilterActive()) return false;
-    const { fromDate, toDate } = this.dateFilterForm.getRawValue();
-    return fromDate.slice(0, 7) !== toDate.slice(0, 7);
+    this.bindDesktopMonthPicker();
   }
 
   showVerticalDayList(): boolean {
-    if (this.isMobileView()) {
-      return this.mobileListMode() === 'list';
+    return this.isMobileView() && this.mobileListMode() === 'list';
+  }
+
+  openMonthPicker(): void {
+    const [yearStr, monthStr] = this.getCurrentMonthPickerValue().split('-');
+    this.monthPickerYear.set(Number(yearStr));
+    this.monthPickerSelectedMonth.set(Number(monthStr));
+    this.monthPickerOpen.set(true);
+  }
+
+  closeMonthPicker(): void {
+    this.monthPickerOpen.set(false);
+  }
+
+  shiftMonthPickerYear(direction: -1 | 1): void {
+    this.monthPickerYear.update((year) => year + direction);
+  }
+
+  monthPickerMonthOptions(): { value: number; label: string }[] {
+    const year = this.monthPickerYear();
+    const formatter = new Intl.DateTimeFormat(this.i18n.dateLocale(), { month: 'short' });
+    return Array.from({ length: 12 }, (_, index) => ({
+      value: index + 1,
+      label: formatter.format(new Date(year, index, 1)),
+    }));
+  }
+
+  isMonthPickerMonthActive(month: number): boolean {
+    return this.monthPickerSelectedMonth() === month;
+  }
+
+  selectMonthPickerMonth(month: number): void {
+    this.applyMonthSelection(this.monthPickerYear(), month);
+    this.closeMonthPicker();
+  }
+
+  goMonthPickerThisMonth(): void {
+    const today = todayDateOnly();
+    const { year, month } = parseDateOnly(today);
+    this.applyMonthSelection(year, month);
+    this.closeMonthPicker();
+  }
+
+  mobileListTitleCompact(): string {
+    const { fromDate, toDate } = this.getVerticalListRange();
+    const locale = this.i18n.dateLocale();
+
+    if (this.mobileListMode() === 'month' || this.mobileListMode() === 'list') {
+      return new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric' }).format(
+        toLocalDate(fromDate),
+      );
     }
-    return this.dateFilterActive() && this.dateFilterSpansMonths();
+
+    const fromLabel = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(
+      toLocalDate(fromDate),
+    );
+    const toLabel = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(
+      toLocalDate(toDate),
+    );
+    return `${fromLabel} – ${toLabel}`;
   }
 
   showMobileBookView(): boolean {
@@ -460,7 +431,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
 
   mobileListTitle(): string {
     const { fromDate, toDate } = this.getVerticalListRange();
-    if (this.mobileListMode() === 'month') {
+    if (this.mobileListMode() === 'month' || this.mobileListMode() === 'list') {
       return new Intl.DateTimeFormat(this.i18n.dateLocale(), {
         month: 'long',
         year: 'numeric',
@@ -471,13 +442,6 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
 
   showMobileListNavControls(): boolean {
     return this.mobileListMode() === 'week' || this.mobileListMode() === 'month';
-  }
-
-  onMobileFilterRangeChange(): void {
-    if (!this.isMobileView() || this.dateFilterActive()) return;
-    if (this.mobileListMode() === 'list') {
-      void this.refreshVerticalListEvents();
-    }
   }
 
   shiftMobileList(direction: -1 | 1): void {
@@ -500,17 +464,13 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
 
   setMobileListMode(mode: 'week' | 'month' | 'list'): void {
     if (this.mobileListMode() === mode) return;
-    if (mode !== 'list' && this.dateFilterActive()) {
-      this.dateFilterActive.set(false);
-      this.dateFilterError.set(null);
-    }
     this.mobileListMode.set(mode);
     void this.refreshVerticalListEvents();
   }
 
   private getVerticalListRange(): { fromDate: string; toDate: string } {
-    if (this.dateFilterActive() || this.mobileListMode() === 'list') {
-      return this.dateFilterForm.getRawValue();
+    if (this.mobileListMode() === 'list') {
+      return this.monthRangeFromAnchor(this.mobileListAnchor());
     }
     return this.mobileListRange();
   }
@@ -1388,12 +1348,6 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
   }
 
   private async refreshCalendar(): Promise<void> {
-    if (this.dateFilterActive()) {
-      const { fromDate, toDate } = this.dateFilterForm.getRawValue();
-      await this.loadEvents(fromDate, toDate);
-      return;
-    }
-
     if (this.isMobileView() || this.showVerticalDayList()) {
       await this.refreshVerticalListEvents();
       return;
@@ -1407,61 +1361,9 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     }
   }
 
-  private initDateFilterDefaults(): void {
-    const today = todayDateOnly();
-    const { year, month } = parseDateOnly(today);
-    const monthStr = String(month).padStart(2, '0');
-    const lastDay = new Date(year, month, 0).getDate();
-    this.dateFilterForm.patchValue({
-      fromDate: `${year}-${monthStr}-01`,
-      toDate: `${year}-${monthStr}-${String(lastDay).padStart(2, '0')}`,
-    });
-  }
-
-  private applyDateFilterToCalendar(fromDate: string, toDate: string): void {
-    const api = this.calendarComponent?.getApi();
-    if (!api) return;
-
-    const dayCount = this.countDaysInclusive(fromDate, toDate);
-    const exclusiveEnd = addDaysToDateOnly(toDate, 1);
-    const range = { start: fromDate, end: exclusiveEnd };
-    const sameMonth = fromDate.slice(0, 7) === toDate.slice(0, 7);
-    const existingViews = (api.getOption('views') ?? {}) as Record<string, unknown>;
-    const useListOnly = this.isMobileView() || !sameMonth;
-
-    // visibleRange breaks cross-month dayGrid (only first month renders).
-    // Use duration spanning the full filter instead.
-    api.setOption('visibleRange', undefined);
-    api.setOption('views', {
-      ...existingViews,
-      listFilterRange: {
-        type: 'list',
-        duration: { days: dayCount },
-      },
-      dayGridFilterRange: sameMonth
-        ? { type: 'dayGridMonth' }
-        : { type: 'dayGrid', duration: { days: dayCount } },
-    });
-    api.setOption('validRange', range);
-    api.setOption('headerToolbar', {
-      left: 'today',
-      center: 'title',
-      right: useListOnly ? 'listFilterRange' : 'dayGridFilterRange,listFilterRange',
-    });
-
-    const initialView = useListOnly ? 'listFilterRange' : 'dayGridFilterRange';
-    api.changeView(initialView, fromDate);
-  }
-
   private applyResponsiveCalendarView(mobile: boolean): void {
     if (mobile) {
       void this.refreshVerticalListEvents();
-      return;
-    }
-
-    if (this.dateFilterActive() && !this.dateFilterSpansMonths()) {
-      const { fromDate, toDate } = this.dateFilterForm.getRawValue();
-      this.applyDateFilterToCalendar(fromDate, toDate);
       return;
     }
 
@@ -1469,18 +1371,73 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     if (!api) return;
 
     api.setOption('headerToolbar', { ...this.defaultHeaderToolbar });
-    const viewType = api.view.type;
-    if (viewType.startsWith('list') && !viewType.includes('Filter')) {
-      api.setOption('visibleRange', undefined);
-      api.setOption('validRange', undefined);
+    api.setOption('visibleRange', undefined);
+    api.setOption('validRange', undefined);
+    if (api.view.type !== 'dayGridMonth' && api.view.type !== 'listWeek') {
       api.changeView('dayGridMonth');
     }
+    this.bindDesktopMonthPicker();
   }
 
-  private countDaysInclusive(fromDate: DateOnly, toDate: DateOnly): number {
-    const from = toLocalDate(fromDate);
-    const to = toLocalDate(toDate);
-    return Math.round((to.getTime() - from.getTime()) / 86400000) + 1;
+  private applyMonthSelection(year: number, month: number): void {
+    const monthStr = String(month).padStart(2, '0');
+    const firstDay = `${year}-${monthStr}-01` as DateOnly;
+    this.mobileListAnchor.set(firstDay);
+
+    if (this.isMobileView()) {
+      void this.refreshVerticalListEvents();
+      return;
+    }
+
+    this.calendarComponent?.getApi()?.gotoDate(firstDay);
+  }
+
+  private getCurrentMonthPickerValue(): string {
+    if (this.isMobileView()) {
+      return this.mobileListAnchor().slice(0, 7);
+    }
+
+    const api = this.calendarComponent?.getApi();
+    if (api) {
+      return toDateOnly(api.getDate()).slice(0, 7);
+    }
+
+    return todayDateOnly().slice(0, 7);
+  }
+
+  private monthRangeFromAnchor(anchorIso: DateOnly): { fromDate: DateOnly; toDate: DateOnly } {
+    const anchor = toLocalDate(anchorIso);
+    const year = anchor.getFullYear();
+    const month = anchor.getMonth() + 1;
+    const monthStr = String(month).padStart(2, '0');
+    const lastDay = new Date(year, month, 0).getDate();
+    return {
+      fromDate: `${year}-${monthStr}-01`,
+      toDate: `${year}-${monthStr}-${String(lastDay).padStart(2, '0')}`,
+    };
+  }
+
+  private bindDesktopMonthPicker(): void {
+    if (this.isMobileView()) return;
+
+    const titleEl = document
+      .getElementById('study-calendar')
+      ?.querySelector<HTMLElement>('.fc-toolbar-title');
+    if (!titleEl || titleEl.dataset['monthPickerBound'] === 'true') return;
+
+    titleEl.dataset['monthPickerBound'] = 'true';
+    titleEl.classList.add('sr-calendar-title-picker');
+    titleEl.setAttribute('role', 'button');
+    titleEl.setAttribute('tabindex', '0');
+    titleEl.setAttribute('aria-label', this.i18n.t('calendar.pickMonth'));
+
+    titleEl.addEventListener('click', () => this.openMonthPicker());
+    titleEl.addEventListener('keydown', (event: KeyboardEvent) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        this.openMonthPicker();
+      }
+    });
   }
 
   private clipEventsToRange(

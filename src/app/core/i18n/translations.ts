@@ -84,6 +84,9 @@ const en = {
   'calendar.fc.month': 'Month',
   'calendar.fc.week': 'Week',
   'calendar.fc.list': 'List',
+  'calendar.pickMonth': 'Choose month',
+  'calendar.monthPicker.thisMonth': 'This month',
+  'calendar.monthPicker.close': 'Close',
 
   'calendar.dailyEvents': 'Daily events',
   'calendar.dailyEvents.empty': 'No events on this day.',
@@ -374,6 +377,9 @@ const vi: Record<keyof typeof en, string> = {
   'calendar.fc.month': 'Tháng',
   'calendar.fc.week': 'Tuần',
   'calendar.fc.list': 'Danh sách',
+  'calendar.pickMonth': 'Chọn tháng',
+  'calendar.monthPicker.thisMonth': 'Tháng này',
+  'calendar.monthPicker.close': 'Đóng',
 
   'calendar.dailyEvents': 'Sự kiện trong ngày',
   'calendar.dailyEvents.empty': 'Không có event trong ngày này.',

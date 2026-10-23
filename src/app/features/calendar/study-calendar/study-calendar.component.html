@@ -24,43 +24,6 @@
     <div class="alert alert-error">{{ errorMessage() }}</div>
   }
 
-  <div class="calendar-filter-wrap">
-    <form class="calendar-filter" [formGroup]="dateFilterForm" (ngSubmit)="applyDateFilter()">
-      <label class="calendar-filter__label" for="filterFromDate">{{ 'calendar.filter.fromDate' | translate }}</label>
-      <input
-        id="filterFromDate"
-        class="calendar-filter__input"
-        type="date"
-        formControlName="fromDate"
-        (click)="openDatePicker($event)"
-        (focus)="openDatePicker($event)"
-        (change)="onMobileFilterRangeChange()"
-      />
-      <span class="calendar-filter__sep" aria-hidden="true">→</span>
-      <label class="calendar-filter__label" for="filterToDate">{{ 'calendar.filter.toDate' | translate }}</label>
-      <input
-        id="filterToDate"
-        class="calendar-filter__input"
-        type="date"
-        formControlName="toDate"
-        (click)="openDatePicker($event)"
-        (focus)="openDatePicker($event)"
-        (change)="onMobileFilterRangeChange()"
-      />
-      <button type="submit" class="btn btn-primary btn-sm">{{ 'calendar.filter.search' | translate }}</button>
-      @if (dateFilterActive()) {
-        <button type="button" class="btn btn-ghost btn-sm" (click)="clearDateFilter()">
-          {{ 'calendar.filter.clear' | translate }}
-        </button>
-        <span class="calendar-filter__active">{{ dateFilterActiveLabel() }}</span>
-      }
-    </form>
-
-    @if (dateFilterError()) {
-      <div class="alert alert-error calendar-filter__error">{{ dateFilterError() }}</div>
-    }
-  </div>
-
   <div
     class="calendar-card"
     [class.calendar-card--filter-results]="showVerticalDayList() || showMobileBookView()"
@@ -71,23 +34,6 @@
 
     @if (isMobileView()) {
       <nav class="calendar-mobile-nav" [attr.aria-label]="'calendar.mobile.nav' | translate">
-        @if (showMobileListNavControls()) {
-          <div class="calendar-mobile-nav__controls">
-            <button type="button" class="btn btn-primary btn-sm" (click)="shiftMobileList(-1)">
-              {{ 'calendar.fc.prev' | translate }}
-            </button>
-            <button type="button" class="btn btn-primary btn-sm" (click)="shiftMobileList(1)">
-              {{ 'calendar.fc.next' | translate }}
-            </button>
-            <button type="button" class="btn btn-primary btn-sm" (click)="mobileListGoToday()">
-              {{ 'calendar.fc.today' | translate }}
-            </button>
-          </div>
-        }
-        <h2 class="calendar-mobile-nav__title">{{ mobileListTitle() }}</h2>
-        @if (mobileListMode() === 'list') {
-          <p class="calendar-mobile-nav__hint">{{ 'calendar.mobile.listHint' | translate }}</p>
-        }
         <div class="calendar-mobile-nav__modes">
           <button
             type="button"
@@ -117,6 +63,49 @@
             {{ 'calendar.fc.list' | translate }}
           </button>
         </div>
+        @if (showMobileListNavControls()) {
+          <div class="calendar-mobile-nav__period">
+            <button
+              type="button"
+              class="calendar-mobile-nav__arrow"
+              [attr.aria-label]="'calendar.fc.prev' | translate"
+              (click)="shiftMobileList(-1)"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              class="calendar-mobile-nav__period-label"
+              [attr.aria-label]="('calendar.pickMonth' | translate) + ': ' + mobileListTitle()"
+              (click)="openMonthPicker()"
+            >
+              {{ mobileListTitleCompact() }}
+            </button>
+            <button
+              type="button"
+              class="calendar-mobile-nav__arrow"
+              [attr.aria-label]="'calendar.fc.next' | translate"
+              (click)="shiftMobileList(1)"
+            >
+              ›
+            </button>
+            <button type="button" class="calendar-mobile-nav__today btn btn-ghost btn-sm" (click)="mobileListGoToday()">
+              {{ 'calendar.fc.today' | translate }}
+            </button>
+          </div>
+        } @else {
+          <button
+            type="button"
+            class="calendar-mobile-nav__period-label calendar-mobile-nav__period-label--solo"
+            [attr.aria-label]="('calendar.pickMonth' | translate) + ': ' + mobileListTitle()"
+            (click)="openMonthPicker()"
+          >
+            {{ mobileListTitleCompact() }}
+          </button>
+        }
+        @if (mobileListMode() === 'list') {
+          <p class="calendar-mobile-nav__hint">{{ 'calendar.mobile.listHint' | translate }}</p>
+        }
       </nav>
     }
 
@@ -333,6 +322,58 @@
     }
   </div>
 </div>
+
+@if (monthPickerOpen()) {
+  <div class="month-picker-root" (click)="closeMonthPicker()">
+    <div
+      class="month-picker"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="'calendar.pickMonth' | translate"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="month-picker__year">
+        <button
+          type="button"
+          class="month-picker__year-btn"
+          [attr.aria-label]="'calendar.fc.prev' | translate"
+          (click)="shiftMonthPickerYear(-1)"
+        >
+          ‹
+        </button>
+        <span class="month-picker__year-label">{{ monthPickerYear() }}</span>
+        <button
+          type="button"
+          class="month-picker__year-btn"
+          [attr.aria-label]="'calendar.fc.next' | translate"
+          (click)="shiftMonthPickerYear(1)"
+        >
+          ›
+        </button>
+      </div>
+      <div class="month-picker__grid">
+        @for (option of monthPickerMonthOptions(); track option.value) {
+          <button
+            type="button"
+            class="month-picker__month"
+            [class.month-picker__month--active]="isMonthPickerMonthActive(option.value)"
+            (click)="selectMonthPickerMonth(option.value)"
+          >
+            {{ option.label }}
+          </button>
+        }
+      </div>
+      <div class="month-picker__footer">
+        <button type="button" class="btn btn-ghost btn-sm" (click)="closeMonthPicker()">
+          {{ 'calendar.monthPicker.close' | translate }}
+        </button>
+        <button type="button" class="btn btn-primary btn-sm" (click)="goMonthPickerThisMonth()">
+          {{ 'calendar.monthPicker.thisMonth' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
 
 @if (modalMode()) {
   <div class="modal-root" (click)="onModalRootClick($event)">
