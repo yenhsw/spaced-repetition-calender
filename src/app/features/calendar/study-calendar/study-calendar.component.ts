@@ -78,6 +78,19 @@ type ModalMode =
   | 'daily-events'
   | null;
 
+interface MobileBookDay {
+  date: DateOnly;
+  dayNumber: number;
+  inCurrentMonth: boolean;
+  isToday: boolean;
+  isWeekend: boolean;
+  events: CalendarEvent[];
+}
+
+interface MobileBookWeek {
+  days: MobileBookDay[];
+}
+
 const CALENDAR_MOBILE_MQ = '(max-width: 767px)';
 
 @Component({
@@ -167,6 +180,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
   protected readonly dateFilterError = signal<string | null>(null);
   protected readonly mobileListMode = signal<'week' | 'month' | 'list'>('month');
   protected readonly mobileListAnchor = signal<DateOnly>(todayDateOnly());
+  protected readonly selectedMobileDay = signal<DateOnly | null>(null);
 
   private readonly defaultHeaderToolbar = {
     left: 'prev,next today',
@@ -198,12 +212,25 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     datesSet: this.handleDatesSet.bind(this),
   };
 
+  private bodyScrollLockY = 0;
+
   constructor() {
     effect(() => {
       this.i18n.locale();
       this.applyCalendarLocale();
       void this.reloadEventsForLocale();
     });
+
+    effect(() => {
+      if (typeof document === 'undefined') return;
+      if (this.modalMode()) {
+        this.lockBodyScroll();
+      } else {
+        this.unlockBodyScroll();
+      }
+    });
+
+    this.destroyRef.onDestroy(() => this.unlockBodyScroll());
   }
 
   ngOnInit(): void {
@@ -329,7 +356,17 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
   }
 
   showVerticalDayList(): boolean {
-    return this.isMobileView() || (this.dateFilterActive() && this.dateFilterSpansMonths());
+    if (this.isMobileView()) {
+      return this.mobileListMode() === 'list';
+    }
+    return this.dateFilterActive() && this.dateFilterSpansMonths();
+  }
+
+  showMobileBookView(): boolean {
+    return (
+      this.isMobileView() &&
+      (this.mobileListMode() === 'week' || this.mobileListMode() === 'month')
+    );
   }
 
   verticalDayGroups(): { date: string; events: CalendarEvent[] }[] {
@@ -343,6 +380,79 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
 
   formatVerticalDayHeading(iso: string): string {
     return formatWeekdayDisplayDate(iso, this.i18n.dateLocale());
+  }
+
+  formatWeekdayShort(iso: string): string {
+    return new Intl.DateTimeFormat(this.i18n.dateLocale(), { weekday: 'short' }).format(
+      toLocalDate(iso),
+    );
+  }
+
+  mobileWeekdayLabels(): string[] {
+    const labels: string[] = [];
+    const monday = toLocalDate('2026-01-05');
+    for (let i = 0; i < 7; i += 1) {
+      labels.push(
+        new Intl.DateTimeFormat(this.i18n.dateLocale(), { weekday: 'narrow' }).format(
+          addDays(monday, i),
+        ),
+      );
+    }
+    return labels;
+  }
+
+  mobileBookMonthWeeks(): MobileBookWeek[] {
+    const { fromDate } = this.mobileListRange();
+    const { year, month } = parseDateOnly(fromDate);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const startPad = (new Date(year, month - 1, 1).getDay() + 6) % 7;
+    const totalCells = Math.ceil((startPad + daysInMonth) / 7) * 7;
+    const days: MobileBookDay[] = [];
+
+    for (let i = 0; i < totalCells; i += 1) {
+      const dayOffset = i - startPad + 1;
+      const cellDate = new Date(year, month - 1, dayOffset);
+      const iso = toDateOnly(cellDate);
+      days.push(this.buildMobileBookDay(iso, cellDate.getMonth() === month - 1));
+    }
+
+    const weeks: MobileBookWeek[] = [];
+    for (let i = 0; i < days.length; i += 7) {
+      weeks.push({ days: days.slice(i, i + 7) });
+    }
+    return weeks;
+  }
+
+  mobileBookWeekDays(): MobileBookDay[] {
+    const { fromDate, toDate } = this.mobileListRange();
+    return this.buildDayGroupsForRange(fromDate, toDate, this.events()).map((group) =>
+      this.buildMobileBookDay(group.date, true),
+    );
+  }
+
+  selectedMobileBookDay(): MobileBookDay | null {
+    const date = this.selectedMobileDay();
+    if (!date) return null;
+    return this.buildMobileBookDay(date, true);
+  }
+
+  isMobileDaySelected(date: string): boolean {
+    return this.selectedMobileDay() === date;
+  }
+
+  selectMobileBookDay(date: string): void {
+    this.selectedMobileDay.set(date);
+  }
+
+  onMobileBookDayActivate(day: MobileBookDay): void {
+    this.selectedMobileDay.set(day.date);
+    if (day.events.length > 0) {
+      this.openDailyEvents(day.date);
+      return;
+    }
+    if (!this.readOnly) {
+      this.openCreateTopic(day.date);
+    }
   }
 
   mobileListTitle(): string {
@@ -444,10 +554,36 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     return groups;
   }
 
+  private buildMobileBookDay(iso: DateOnly, inCurrentMonth: boolean): MobileBookDay {
+    const date = toLocalDate(iso);
+    const dayOfWeek = date.getDay();
+    return {
+      date: iso,
+      dayNumber: parseDateOnly(iso).day,
+      inCurrentMonth,
+      isToday: iso === todayDateOnly(),
+      isWeekend: dayOfWeek === 0 || dayOfWeek === 6,
+      events: this.events().filter((event) => event.start.startsWith(iso)),
+    };
+  }
+
+  private syncSelectedMobileDay(): void {
+    const today = todayDateOnly();
+    const { fromDate, toDate } = this.getVerticalListRange();
+    if (today >= fromDate && today <= toDate) {
+      this.selectedMobileDay.set(today);
+      return;
+    }
+    this.selectedMobileDay.set(fromDate);
+  }
+
   private async refreshVerticalListEvents(): Promise<void> {
-    if (!this.showVerticalDayList()) return;
+    if (!this.isMobileView() && !this.showVerticalDayList()) return;
     const { fromDate, toDate } = this.getVerticalListRange();
     await this.loadEvents(fromDate, toDate);
+    if (this.showMobileBookView()) {
+      this.syncSelectedMobileDay();
+    }
   }
 
   formatEventTimeRange(event: CalendarEvent): string {
@@ -825,28 +961,68 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     }
   }
 
-  async completeReview(): Promise<void> {
-    const review = this.selectedReview();
+  getNextCompletableReview(): StudyReview | null {
+    const topic = this.selectedTopic();
+    const current = this.currentStepOffset();
+    if (!topic || current === null) return null;
+
+    for (const review of this.getSortedReviews()) {
+      if (review.status !== ReviewStatus.PENDING) continue;
+
+      const state = this.topicProgressService.getReviewUiState(review);
+      if (state === ReviewUiState.TODAY || state === ReviewUiState.OVERDUE) {
+        return review;
+      }
+      if (review.day_offset >= current) {
+        return review;
+      }
+    }
+    return null;
+  }
+
+  async completeReviewFromTimeline(review: StudyReview): Promise<void> {
+    this.selectedReview.set(review);
+    await this.completeReview(review);
+  }
+
+  async completeReview(reviewOverride?: StudyReview): Promise<void> {
+    const review = reviewOverride ?? this.selectedReview();
     if (!review || review.status === ReviewStatus.COMPLETED) return;
 
     this.loading.set(true);
+    this.scheduleError.set(null);
+
     try {
-      await this.studyReviewService.completeReview(review.id);
       const topic = this.selectedTopic();
       if (topic) {
         await this.onCurrentStepChange(review.day_offset);
       }
+      await this.studyReviewService.completeReview(review.id);
       const refreshed = topic ? await this.studyTopicService.getTopicById(topic.id) : null;
       this.selectedTopic.set(refreshed);
       const updatedReview = refreshed?.study_reviews?.find((r) => r.id === review.id) ?? null;
       this.selectedReview.set(updatedReview);
-      this.modalMode.set('review-detail');
+      this.modalMode.set(this.modalMode() === 'topic-detail' ? 'topic-detail' : 'review-detail');
       await this.refreshCalendar();
     } catch (err: unknown) {
       this.scheduleError.set(err instanceof Error ? err.message : this.i18n.t('calendar.error.complete'));
     } finally {
       this.loading.set(false);
     }
+  }
+
+  private lockBodyScroll(): void {
+    if (document.body.classList.contains('sr-modal-open')) return;
+    this.bodyScrollLockY = window.scrollY;
+    document.body.style.top = `-${this.bodyScrollLockY}px`;
+    document.body.classList.add('sr-modal-open');
+  }
+
+  private unlockBodyScroll(): void {
+    if (!document.body.classList.contains('sr-modal-open')) return;
+    document.body.classList.remove('sr-modal-open');
+    document.body.style.top = '';
+    window.scrollTo(0, this.bodyScrollLockY);
   }
 
   openEditTopic(): void {
@@ -1173,7 +1349,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    if (this.showVerticalDayList()) {
+    if (this.isMobileView() || this.showVerticalDayList()) {
       await this.refreshVerticalListEvents();
       return;
     }

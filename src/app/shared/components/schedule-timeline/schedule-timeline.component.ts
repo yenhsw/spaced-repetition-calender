@@ -11,6 +11,7 @@ import { TopicProgressService } from '../../../core/services/topic-progress.serv
 import { formatShortDisplayDate } from '../../../core/utils/date.utils';
 
 import { ReviewUiState } from '../../../core/enums/review-ui-state.enum';
+import { ReviewStatus } from '../../../core/enums/review-status.enum';
 
 import { TranslationService } from '../../../core/i18n/translation.service';
 
@@ -40,11 +41,13 @@ export class ScheduleTimelineComponent {
 
   @Input() readOnly = false;
 
-
+  @Input() allowComplete = false;
 
   @Output() replaceStep = new EventEmitter<StudyReview>();
 
   @Output() deleteStep = new EventEmitter<StudyReview>();
+
+  @Output() completeStep = new EventEmitter<StudyReview>();
 
 
 
@@ -141,11 +144,21 @@ export class ScheduleTimelineComponent {
 
 
   canEdit(review: StudyReview): boolean {
-
     return !this.readOnly && this.reviewScheduleService.isFutureEditableStep(review, this.currentStepOffset);
-
   }
 
+  canComplete(review: StudyReview): boolean {
+    if (!this.allowComplete || review.status !== ReviewStatus.PENDING) return false;
+
+    const state = this.topicProgressService.getReviewUiState(review);
+    if (state === ReviewUiState.TODAY || state === ReviewUiState.OVERDUE) return true;
+
+    const nextPending = this.reviews
+      .filter((r) => r.status === ReviewStatus.PENDING && r.day_offset >= this.currentStepOffset)
+      .sort((a, b) => a.day_offset - b.day_offset)[0];
+
+    return nextPending?.id === review.id;
+  }
 }
 
 

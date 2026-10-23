@@ -63,64 +63,217 @@
 
   <div
     class="calendar-card"
-    [class.calendar-card--filter-results]="showVerticalDayList()"
+    [class.calendar-card--filter-results]="showVerticalDayList() || showMobileBookView()"
   >
     @if (loading()) {
       <div class="calendar-loading">{{ 'calendar.loading' | translate }}</div>
     }
 
-    @if (showVerticalDayList()) {
-      @if (isMobileView()) {
-        <nav class="calendar-mobile-nav" [attr.aria-label]="'calendar.mobile.nav' | translate">
-          @if (showMobileListNavControls()) {
-            <div class="calendar-mobile-nav__controls">
-              <button type="button" class="btn btn-primary btn-sm" (click)="shiftMobileList(-1)">
-                {{ 'calendar.fc.prev' | translate }}
-              </button>
-              <button type="button" class="btn btn-primary btn-sm" (click)="shiftMobileList(1)">
-                {{ 'calendar.fc.next' | translate }}
-              </button>
-              <button type="button" class="btn btn-primary btn-sm" (click)="mobileListGoToday()">
-                {{ 'calendar.fc.today' | translate }}
-              </button>
-            </div>
-          }
-          <h2 class="calendar-mobile-nav__title">{{ mobileListTitle() }}</h2>
-          @if (mobileListMode() === 'list') {
-            <p class="calendar-mobile-nav__hint">{{ 'calendar.mobile.listHint' | translate }}</p>
-          }
-          <div class="calendar-mobile-nav__modes">
-            <button
-              type="button"
-              class="btn btn-sm"
-              [class.btn-primary]="mobileListMode() === 'week'"
-              [class.btn-ghost]="mobileListMode() !== 'week'"
-              (click)="setMobileListMode('week')"
-            >
-              {{ 'calendar.fc.week' | translate }}
+    @if (isMobileView()) {
+      <nav class="calendar-mobile-nav" [attr.aria-label]="'calendar.mobile.nav' | translate">
+        @if (showMobileListNavControls()) {
+          <div class="calendar-mobile-nav__controls">
+            <button type="button" class="btn btn-primary btn-sm" (click)="shiftMobileList(-1)">
+              {{ 'calendar.fc.prev' | translate }}
             </button>
-            <button
-              type="button"
-              class="btn btn-sm"
-              [class.btn-primary]="mobileListMode() === 'month'"
-              [class.btn-ghost]="mobileListMode() !== 'month'"
-              (click)="setMobileListMode('month')"
-            >
-              {{ 'calendar.fc.month' | translate }}
+            <button type="button" class="btn btn-primary btn-sm" (click)="shiftMobileList(1)">
+              {{ 'calendar.fc.next' | translate }}
             </button>
-            <button
-              type="button"
-              class="btn btn-sm"
-              [class.btn-primary]="mobileListMode() === 'list'"
-              [class.btn-ghost]="mobileListMode() !== 'list'"
-              (click)="setMobileListMode('list')"
-            >
-              {{ 'calendar.fc.list' | translate }}
+            <button type="button" class="btn btn-primary btn-sm" (click)="mobileListGoToday()">
+              {{ 'calendar.fc.today' | translate }}
             </button>
           </div>
-        </nav>
-      }
+        }
+        <h2 class="calendar-mobile-nav__title">{{ mobileListTitle() }}</h2>
+        @if (mobileListMode() === 'list') {
+          <p class="calendar-mobile-nav__hint">{{ 'calendar.mobile.listHint' | translate }}</p>
+        }
+        <div class="calendar-mobile-nav__modes">
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.btn-primary]="mobileListMode() === 'week'"
+            [class.btn-ghost]="mobileListMode() !== 'week'"
+            (click)="setMobileListMode('week')"
+          >
+            {{ 'calendar.fc.week' | translate }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.btn-primary]="mobileListMode() === 'month'"
+            [class.btn-ghost]="mobileListMode() !== 'month'"
+            (click)="setMobileListMode('month')"
+          >
+            {{ 'calendar.fc.month' | translate }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.btn-primary]="mobileListMode() === 'list'"
+            [class.btn-ghost]="mobileListMode() !== 'list'"
+            (click)="setMobileListMode('list')"
+          >
+            {{ 'calendar.fc.list' | translate }}
+          </button>
+        </div>
+      </nav>
+    }
 
+    @if (showMobileBookView()) {
+      <div class="calendar-book">
+        @if (mobileListMode() === 'month') {
+          <div class="calendar-book__page calendar-book__page--month">
+            <header class="calendar-book__page-head">
+              <span class="calendar-book__page-label">{{ 'calendar.mobile.bookMonth' | translate }}</span>
+              <span class="calendar-book__page-title">{{ mobileListTitle() }}</span>
+            </header>
+
+            <div class="calendar-book__grid">
+              @for (label of mobileWeekdayLabels(); track label) {
+                <div class="calendar-book__weekday">{{ label }}</div>
+              }
+              @for (week of mobileBookMonthWeeks(); track week.days[0].date) {
+                @for (day of week.days; track day.date) {
+                  <button
+                    type="button"
+                    class="calendar-book__cell"
+                    [class.calendar-book__cell--muted]="!day.inCurrentMonth"
+                    [class.calendar-book__cell--today]="day.isToday"
+                    [class.calendar-book__cell--selected]="isMobileDaySelected(day.date)"
+                    [class.calendar-book__cell--weekend]="day.isWeekend"
+                    (click)="selectMobileBookDay(day.date)"
+                  >
+                    <span class="calendar-book__cell-num">{{ day.dayNumber }}</span>
+                    @if (day.events.length > 0) {
+                      <span class="calendar-book__cell-dots">
+                        @for (event of day.events.slice(0, 3); track event.id) {
+                          <span
+                            class="calendar-book__dot"
+                            [ngStyle]="getTopicColorVars(event.extendedProps.topicId)"
+                          ></span>
+                        }
+                        @if (day.events.length > 3) {
+                          <span class="calendar-book__more">+{{ day.events.length - 3 }}</span>
+                        }
+                      </span>
+                    }
+                  </button>
+                }
+              }
+            </div>
+          </div>
+
+          @if (selectedMobileBookDay(); as day) {
+            <section class="calendar-book__detail">
+              <div class="calendar-book__detail-head">
+                <h3>{{ formatVerticalDayHeading(day.date) }}</h3>
+                @if (!readOnly) {
+                  <button
+                    type="button"
+                    class="btn btn-ghost"
+                    (click)="openCreateTopic(day.date)"
+                  >
+                    + {{ 'calendar.mobile.addTopic' | translate }}
+                  </button>
+                }
+              </div>
+              @if (day.events.length === 0) {
+                <p class="calendar-book__detail-empty">{{ 'calendar.mobile.noEvents' | translate }}</p>
+              } @else {
+                <div class="calendar-book__detail-list">
+                  @for (event of day.events; track event.id) {
+                    <button
+                      type="button"
+                      class="calendar-book__detail-item"
+                      [ngStyle]="getTopicColorVars(event.extendedProps.topicId)"
+                      (click)="openFilteredEvent(event)"
+                    >
+                      <span class="calendar-book__detail-time">{{ formatEventTimeRange(event) }}</span>
+                      <span class="calendar-book__detail-title">{{ event.title }}</span>
+                    </button>
+                  }
+                </div>
+              }
+              <button
+                type="button"
+                class="btn btn-primary btn-block"
+                (click)="onMobileBookDayActivate(day)"
+              >
+                {{ 'calendar.mobile.openDay' | translate }}
+              </button>
+            </section>
+          }
+        } @else {
+          <div class="calendar-book__page calendar-book__page--week">
+            <header class="calendar-book__page-head">
+              <span class="calendar-book__page-label">{{ 'calendar.mobile.bookWeek' | translate }}</span>
+              <span class="calendar-book__page-title">{{ mobileListTitle() }}</span>
+            </header>
+
+            <div class="calendar-book__week-pages">
+              @for (day of mobileBookWeekDays(); track day.date) {
+                <article
+                  class="calendar-book__week-sheet"
+                  [class.calendar-book__week-sheet--today]="day.isToday"
+                  [class.calendar-book__week-sheet--selected]="isMobileDaySelected(day.date)"
+                  [class.calendar-book__week-sheet--weekend]="day.isWeekend"
+                >
+                  <button
+                    type="button"
+                    class="calendar-book__week-head"
+                    (click)="selectMobileBookDay(day.date)"
+                  >
+                    <span class="calendar-book__week-dayname">{{ formatWeekdayShort(day.date) }}</span>
+                    <span class="calendar-book__week-daynum">{{ day.dayNumber }}</span>
+                  </button>
+
+                  @if (day.events.length === 0) {
+                    <p class="calendar-book__week-empty">{{ 'calendar.mobile.noEvents' | translate }}</p>
+                    @if (!readOnly) {
+                      <div class="calendar-book__week-actions">
+                        <button
+                          type="button"
+                          class="btn btn-ghost btn-block"
+                          (click)="openCreateTopic(day.date)"
+                        >
+                          + {{ 'calendar.mobile.addTopic' | translate }}
+                        </button>
+                      </div>
+                    }
+                  } @else {
+                    <div class="calendar-book__week-events">
+                      @for (event of day.events; track event.id) {
+                        <button
+                          type="button"
+                          class="calendar-book__week-event"
+                          [ngStyle]="getTopicColorVars(event.extendedProps.topicId)"
+                          (click)="openFilteredEvent(event)"
+                        >
+                          <span class="calendar-book__week-event-time">{{ formatEventTimeRange(event) }}</span>
+                          <span class="calendar-book__week-event-title">{{ event.title }}</span>
+                        </button>
+                      }
+                    </div>
+                    @if (!readOnly) {
+                      <div class="calendar-book__week-actions">
+                        <button
+                          type="button"
+                          class="btn btn-ghost btn-block"
+                          (click)="openCreateTopic(day.date)"
+                        >
+                          + {{ 'calendar.mobile.addTopic' | translate }}
+                        </button>
+                      </div>
+                    }
+                  }
+                </article>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    } @else if (showVerticalDayList()) {
       <div class="calendar-filter-results">
         @for (group of verticalDayGroups(); track group.date) {
           <section class="calendar-filter-results__day">
@@ -129,7 +282,7 @@
               @if (!readOnly) {
                 <button
                   type="button"
-                  class="btn btn-ghost btn-sm calendar-filter-results__add"
+                  class="btn btn-ghost calendar-filter-results__add"
                   [attr.aria-label]="'calendar.mobile.addTopic' | translate"
                   (click)="openCreateTopic(group.date)"
                 >
@@ -157,18 +310,20 @@
           </section>
         }
       </div>
+    }
 
-      @if (isMobileView() && !readOnly) {
-        <button
-          type="button"
-          class="calendar-fab"
-          [attr.aria-label]="'calendar.addTopic' | translate"
-          (click)="openCreateTopic(todayDate())"
-        >
-          +
-        </button>
-      }
-    } @else {
+    @if (isMobileView() && !readOnly) {
+      <button
+        type="button"
+        class="calendar-fab"
+        [attr.aria-label]="'calendar.addTopic' | translate"
+        (click)="openCreateTopic(todayDate())"
+      >
+        <span class="calendar-fab__icon" aria-hidden="true">+</span>
+      </button>
+    }
+
+    @if (!showMobileBookView() && !showVerticalDayList()) {
       <div
         id="study-calendar"
         class="sr-calendar fc fc-media-screen fc-direction-ltr fc-theme-standard"
@@ -195,7 +350,7 @@
             [attr.aria-label]="'calendar.dailyEvents.close' | translate"
             (click)="closeModal()"
           >
-            ×
+            <span class="icon-btn-round__glyph" aria-hidden="true">×</span>
           </button>
         </div>
         <div class="modal__body daily-events-panel">
@@ -274,7 +429,9 @@
             <span class="modal__eyebrow">{{ 'nav.calendar' | translate }}</span>
             <h2>{{ 'calendar.addTopic' | translate }}</h2>
           </div>
-          <button type="button" class="modal__close" (click)="closeModal()">×</button>
+          <button type="button" class="modal__close" (click)="closeModal()">
+            <span class="icon-btn-round__glyph" aria-hidden="true">×</span>
+          </button>
         </div>
         <form [formGroup]="topicForm" (ngSubmit)="submitCreateTopic()" class="modal__form">
           <div class="modal__body">
@@ -340,7 +497,9 @@
               <span class="modal__eyebrow">{{ 'calendar.topicDetail' | translate }}</span>
               <h2>{{ topic.title }}</h2>
             </div>
-            <button type="button" class="modal__close" (click)="closeModal()">×</button>
+            <button type="button" class="modal__close" (click)="closeModal()">
+            <span class="icon-btn-round__glyph" aria-hidden="true">×</span>
+          </button>
           </div>
           <div class="modal__body">
             <div class="info-grid">
@@ -376,6 +535,25 @@
               }
             </div>
 
+            @if (getNextCompletableReview(); as nextReview) {
+              <section class="review-quick-action">
+                <p class="review-quick-action__hint">
+                  {{
+                    'calendar.completeNext.hint'
+                      | translate:{ label: reviewScheduleService.offsetLabel(nextReview.day_offset) }
+                  }}
+                </p>
+                <button
+                  type="button"
+                  class="btn btn-success btn-block"
+                  [disabled]="loading()"
+                  (click)="completeReviewFromTimeline(nextReview)"
+                >
+                  {{ 'calendar.btn.markCompleted' | translate }}
+                </button>
+              </section>
+            }
+
             @if (getTopicProgress(); as progress) {
               <section class="progress-section">
                 <h3>{{ 'calendar.progress.title' | translate }}</h3>
@@ -405,18 +583,24 @@
               </section>
             }
 
+            @if (scheduleError()) {
+              <div class="alert alert-error">{{ scheduleError() }}</div>
+            }
+
             <section class="schedule-section">
               <h3>{{ 'calendar.schedule.full' | translate }}</h3>
               <app-schedule-timeline
                 [reviews]="getSortedReviews()"
                 [currentStepOffset]="currentStepOffset() ?? 0"
                 [readOnly]="true"
+                [allowComplete]="!readOnly"
+                (completeStep)="completeReviewFromTimeline($event)"
               />
             </section>
           </div>
           @if (!readOnly) {
             <div class="modal__footer modal__footer--between">
-              <button type="button" class="btn btn-danger btn-sm" (click)="deleteTopic()">
+              <button type="button" class="btn btn-danger" (click)="deleteTopic()">
                 {{ 'calendar.btn.deleteTopic' | translate }}
               </button>
               <div class="modal__footer-group">
@@ -440,7 +624,9 @@
                 <span class="modal__eyebrow">{{ 'calendar.reviewDetail' | translate }}</span>
                 <h2>{{ reviewScheduleService.offsetLabel(review.day_offset) }} · {{ topic.title }}</h2>
               </div>
-              <button type="button" class="modal__close" (click)="closeModal()">×</button>
+              <button type="button" class="modal__close" (click)="closeModal()">
+            <span class="icon-btn-round__glyph" aria-hidden="true">×</span>
+          </button>
             </div>
             <div class="modal__body">
               <div class="info-grid">
@@ -472,6 +658,9 @@
                   </div>
                 }
               </div>
+              @if (scheduleError()) {
+                <div class="alert alert-error">{{ scheduleError() }}</div>
+              }
             </div>
             @if (!readOnly && review.status === ReviewStatus.PENDING) {
               <div class="modal__footer">
@@ -494,7 +683,9 @@
               <span class="modal__eyebrow">{{ 'calendar.editSchedule' | translate }}</span>
               <h2>{{ topic.title }}</h2>
             </div>
-            <button type="button" class="modal__close" (click)="backToTopicDetail()">×</button>
+            <button type="button" class="modal__close" (click)="backToTopicDetail()">
+              <span class="icon-btn-round__glyph" aria-hidden="true">×</span>
+            </button>
           </div>
           <div class="modal__body">
             <div class="form-group current-step-picker">
@@ -543,7 +734,9 @@
             <span class="modal__eyebrow">{{ 'calendar.editTopic' | translate }}</span>
             <h2>{{ selectedTopic()?.title }}</h2>
           </div>
-          <button type="button" class="modal__close" (click)="backFromEditTopic()">×</button>
+          <button type="button" class="modal__close" (click)="backFromEditTopic()">
+            <span class="icon-btn-round__glyph" aria-hidden="true">×</span>
+          </button>
         </div>
         <form [formGroup]="editTopicForm" (ngSubmit)="submitEditTopic()" class="modal__form">
           <div class="modal__body">
@@ -595,7 +788,9 @@
             <span class="modal__eyebrow">{{ 'calendar.editSchedule' | translate }}</span>
             <h2>{{ 'calendar.addStep' | translate }}</h2>
           </div>
-          <button type="button" class="modal__close" (click)="backFromScheduleAction()">×</button>
+          <button type="button" class="modal__close" (click)="backFromScheduleAction()">
+            <span class="icon-btn-round__glyph" aria-hidden="true">×</span>
+          </button>
         </div>
         <form [formGroup]="addStepForm" (ngSubmit)="submitAddStep()" class="modal__form add-step-form">
           <div class="modal__body">
@@ -645,7 +840,9 @@
             <span class="modal__eyebrow">{{ 'calendar.editSchedule' | translate }}</span>
             <h2>{{ 'calendar.replaceStep' | translate }}</h2>
           </div>
-          <button type="button" class="modal__close" (click)="backFromScheduleAction()">×</button>
+          <button type="button" class="modal__close" (click)="backFromScheduleAction()">
+            <span class="icon-btn-round__glyph" aria-hidden="true">×</span>
+          </button>
         </div>
         <form [formGroup]="replaceStepForm" (ngSubmit)="submitReplaceStep()" class="modal__form">
           <div class="modal__body">

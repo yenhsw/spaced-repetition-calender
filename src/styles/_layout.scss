@@ -154,10 +154,15 @@
   display: flex;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: var(--sr-space-sm);
+  gap: 0.5rem;
   padding-top: var(--sr-space-md);
   border-top: 1px solid var(--sr-border);
   margin-top: var(--sr-space-md);
+
+  .btn {
+    min-height: var(--sr-btn-min-height);
+    font-size: var(--sr-font-size-sm);
+  }
 }
 
 .settings-page__details {
@@ -279,6 +284,15 @@
     input {
       flex: 1;
       min-width: 0;
+    }
+  }
+
+  .settings-page__actions {
+    flex-direction: column;
+    align-items: stretch;
+
+    .btn {
+      width: 100%;
     }
   }
 

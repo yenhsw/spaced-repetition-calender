@@ -9,6 +9,14 @@
 html {
   overflow-x: hidden;
   scroll-behavior: smooth;
+  touch-action: manipulation;
+}
+
+body.sr-modal-open {
+  position: fixed;
+  width: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 body {

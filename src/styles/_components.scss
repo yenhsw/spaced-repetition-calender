@@ -71,13 +71,17 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0.68rem 1.15rem;
+  min-height: var(--sr-btn-min-height);
+  padding: var(--sr-btn-padding-y) var(--sr-btn-padding-x);
   border: none;
   border-radius: var(--sr-radius-sm);
+  font-family: inherit;
   font-weight: var(--sr-font-weight-semibold);
   font-size: var(--sr-font-size-sm);
+  line-height: 1.25;
   cursor: pointer;
   white-space: nowrap;
+  text-align: center;
   transition:
     background var(--sr-transition-fast),
     transform var(--sr-transition-fast),
@@ -134,15 +138,30 @@
     }
   }
 
+  &-secondary {
+    background: var(--sr-surface);
+    color: var(--sr-text);
+    border: 1.5px solid var(--sr-border-strong);
+
+    &:hover:not(:disabled) {
+      background: var(--sr-surface-muted);
+      border-color: color-mix(in srgb, var(--sr-primary) 25%, var(--sr-border-strong));
+    }
+  }
+
   &-block {
     width: 100%;
   }
 
   &-sm {
-    padding: 0.42rem 0.75rem;
-    font-size: var(--sr-font-size-xs);
-    border-radius: 8px;
+    min-height: var(--sr-btn-min-height-sm);
+    padding: var(--sr-btn-padding-y-sm) var(--sr-btn-padding-x-sm);
+    font-size: var(--sr-font-size-sm);
+    border-radius: var(--sr-radius-sm);
   }
+
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .alert {
@@ -223,6 +242,8 @@
   background: rgba(15, 23, 42, 0.55);
   backdrop-filter: blur(4px);
   z-index: 1050;
+  touch-action: none;
+  overscroll-behavior: contain;
   animation: sr-backdrop-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -301,24 +322,55 @@
   color: var(--sr-primary);
 }
 
-.modal__close {
-  display: flex;
+.icon-btn-round {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
   border: none;
-  background: var(--sr-surface-muted);
   border-radius: var(--sr-radius-full);
-  font-size: 1.25rem;
-  line-height: 1;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+
+  &__glyph {
+    display: block;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 300;
+    line-height: 1;
+    transform: translateY(-0.04em);
+    pointer-events: none;
+  }
+}
+
+.modal__close {
+  @extend .icon-btn-round;
+  background: var(--sr-surface-muted);
   color: var(--sr-text-secondary);
   transition: background var(--sr-transition-fast), color var(--sr-transition-fast);
 
   &:hover {
     background: var(--sr-danger-soft);
     color: var(--sr-danger);
+  }
+}
+
+.review-quick-action {
+  margin-bottom: var(--sr-space-md);
+  padding: 0.85rem 1rem;
+  border-radius: var(--sr-radius-md);
+  border: 1px solid color-mix(in srgb, var(--sr-success) 25%, var(--sr-border));
+  background: var(--sr-success-soft);
+
+  &__hint {
+    margin: 0 0 0.65rem;
+    font-size: var(--sr-font-size-sm);
+    color: var(--sr-text-secondary);
+    line-height: 1.45;
   }
 }
 
@@ -346,12 +398,20 @@
   justify-content: flex-end;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--sr-space-sm);
+  gap: 0.5rem;
   flex-shrink: 0;
   padding: 0.95rem 1.35rem;
   border-top: 1px solid var(--sr-border);
   background: color-mix(in srgb, var(--sr-surface-muted) 70%, var(--sr-surface));
   box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.06);
+
+  .btn {
+    min-height: var(--sr-btn-min-height);
+    padding: var(--sr-btn-padding-y) var(--sr-btn-padding-x);
+    font-size: var(--sr-font-size-sm);
+    font-weight: var(--sr-font-weight-semibold);
+    border-radius: var(--sr-radius-sm);
+  }
 
   &--between {
     justify-content: space-between;
@@ -361,6 +421,7 @@
     flex-direction: column;
     align-items: stretch;
 
+    .btn,
     .btn-block {
       width: 100%;
     }
@@ -375,15 +436,28 @@
 }
 
 @media (max-width: 520px) {
-  .modal__footer--between {
-    flex-direction: column-reverse;
+  .modal__footer {
+    flex-direction: column;
     align-items: stretch;
 
-    .modal__footer-group {
-      flex-direction: column;
+    .btn {
+      width: 100%;
+      white-space: normal;
+    }
 
-      .btn {
+    &--between {
+      > .btn-danger {
+        order: 10;
+      }
+
+      .modal__footer-group {
+        flex-direction: column;
         width: 100%;
+        gap: 0.5rem;
+
+        .btn {
+          width: 100%;
+        }
       }
     }
   }

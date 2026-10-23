@@ -33,8 +33,19 @@
           <span class="timeline-item__step">{{ 'timeline.step' | translate:{ order: review.step_order } }}</span>
         </div>
 
-        @if (canEdit(review)) {
+        @if (canComplete(review) || canEdit(review)) {
           <div class="timeline-item__actions">
+            @if (canComplete(review)) {
+              <button
+                type="button"
+                class="btn btn-sm btn-success"
+                [attr.aria-label]="'timeline.completeAria' | translate:{ label: reviewScheduleService.offsetLabel(review.day_offset) }"
+                (click)="completeStep.emit(review)"
+              >
+                {{ 'timeline.complete' | translate }}
+              </button>
+            }
+            @if (canEdit(review)) {
             <button
               type="button"
               class="btn btn-sm btn-ghost"
@@ -51,6 +62,7 @@
             >
               {{ 'timeline.delete' | translate }}
             </button>
+            }
           </div>
         }
       </div>
