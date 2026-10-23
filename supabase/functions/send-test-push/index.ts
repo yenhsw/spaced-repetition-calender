@@ -30,6 +30,7 @@ Deno.serve(async (req) => {
       title: 'Spaced Repetition — Test notification',
       body: 'Push notifications are working. Tap to open today\'s reviews.',
       url: '/spaced-repetition/today',
+      badgeCount: 1,
     },
   });
 

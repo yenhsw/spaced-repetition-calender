@@ -1,5 +1,5 @@
 import { ApplicationConfig, APP_INITIALIZER, isDevMode, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withInMemoryScrolling } from '@angular/router';
 import { provideServiceWorker } from '@angular/service-worker';
 
 import { routes } from './app.routes';
@@ -9,7 +9,13 @@ import { pwaInitializer } from './core/initializers/pwa.initializer';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes),
+    provideRouter(
+      routes,
+      withInMemoryScrolling({
+        scrollPositionRestoration: 'top',
+        anchorScrolling: 'enabled',
+      }),
+    ),
     {
       provide: APP_INITIALIZER,
       useFactory: authInitializer,
@@ -20,7 +26,7 @@ export const appConfig: ApplicationConfig = {
       useFactory: pwaInitializer,
       multi: true,
     },
-    provideServiceWorker('ngsw-worker.js', {
+    provideServiceWorker('combined-sw.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
     }),

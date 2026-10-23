@@ -21,6 +21,7 @@ body.sr-modal-open {
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   font-family: var(--sr-font);
   font-size: var(--sr-font-size-sm);
   background:

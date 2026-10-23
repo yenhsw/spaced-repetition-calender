@@ -23,6 +23,9 @@ export class AppShellComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   ngOnInit(): void {
+    if (typeof window !== 'undefined') {
+      window.scrollTo(0, 0);
+    }
     void this.todayCount.refresh();
 
     this.router.events
@@ -31,6 +34,9 @@ export class AppShellComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(() => {
+        if (typeof window !== 'undefined') {
+          window.scrollTo(0, 0);
+        }
         void this.todayCount.refresh();
       });
 

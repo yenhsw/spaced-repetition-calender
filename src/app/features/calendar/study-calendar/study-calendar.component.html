@@ -160,11 +160,14 @@
           @if (selectedMobileBookDay(); as day) {
             <section class="calendar-book__detail">
               <div class="calendar-book__detail-head">
-                <h3>{{ formatVerticalDayHeading(day.date) }}</h3>
+                <div class="calendar-day-heading">
+                  <span class="calendar-day-heading__weekday">{{ formatVerticalDayWeekday(day.date) }}</span>
+                  <span class="calendar-day-heading__date">{{ formatVerticalDayDate(day.date) }}</span>
+                </div>
                 @if (!readOnly) {
                   <button
                     type="button"
-                    class="btn btn-ghost"
+                    class="btn btn-ghost btn-sm calendar-book__detail-add"
                     (click)="openCreateTopic(day.date)"
                   >
                     + {{ 'calendar.mobile.addTopic' | translate }}
@@ -271,7 +274,10 @@
         @for (group of verticalDayGroups(); track group.date) {
           <section class="calendar-filter-results__day">
             <div class="calendar-filter-results__date-row">
-              <h3 class="calendar-filter-results__date">{{ formatVerticalDayHeading(group.date) }}</h3>
+              <div class="calendar-day-heading calendar-day-heading--compact">
+                <span class="calendar-day-heading__weekday">{{ formatVerticalDayWeekday(group.date) }}</span>
+                <span class="calendar-day-heading__date">{{ formatVerticalDayDate(group.date) }}</span>
+              </div>
               @if (!readOnly) {
                 <button
                   type="button"

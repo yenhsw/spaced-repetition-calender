@@ -273,6 +273,7 @@ async function sendWebPushNow(args: {
       title: 'Spaced Repetition — Review due',
       body: args.message,
       url: '/spaced-repetition/today',
+      badgeCount: 1,
     },
   });
 

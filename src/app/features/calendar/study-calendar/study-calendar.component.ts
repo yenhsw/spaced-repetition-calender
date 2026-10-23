@@ -61,6 +61,7 @@ import {
   formatLongDisplayDate,
   formatShortDisplayDate,
   formatWeekdayDisplayDate,
+  formatWeekdayLong,
   parseDateOnly,
   todayDateOnly,
   toDateOnly,
@@ -356,6 +357,14 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
 
   formatVerticalDayHeading(iso: string): string {
     return formatWeekdayDisplayDate(iso, this.i18n.dateLocale());
+  }
+
+  formatVerticalDayWeekday(iso: string): string {
+    return formatWeekdayLong(iso, this.i18n.dateLocale());
+  }
+
+  formatVerticalDayDate(iso: string): string {
+    return formatShortDisplayDate(iso, this.i18n.dateLocale());
   }
 
   formatWeekdayShort(iso: string): string {

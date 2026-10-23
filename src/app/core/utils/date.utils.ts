@@ -13,6 +13,7 @@ export {
   formatLongDisplayDate,
   formatShortDisplayDate,
   formatWeekdayDisplayDate,
+  formatWeekdayLong,
   calendarViewRangeInclusive,
 } from './date-only.utils';
 

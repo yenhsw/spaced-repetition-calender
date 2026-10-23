@@ -585,20 +585,18 @@
 
   &__detail-head {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 0.5rem;
     margin-bottom: 0.55rem;
 
-    h3 {
-      margin: 0;
-      font-size: var(--sr-font-size-sm);
-      font-weight: var(--sr-font-weight-bold);
-      color: var(--sr-text-secondary);
-    }
-
-    .btn {
+    .btn,
+    .calendar-book__detail-add {
       flex-shrink: 0;
+      margin-top: 0.05rem;
+      min-height: 1.85rem;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.72rem;
     }
   }
 
@@ -950,14 +948,14 @@
 
 .calendar-fab {
   position: fixed;
-  right: 1.15rem;
-  bottom: 1.15rem;
+  right: 1rem;
+  bottom: max(1rem, env(safe-area-inset-bottom));
   z-index: var(--sr-z-fab, 40);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
   padding: 0;
   border: none;
   border-radius: var(--sr-radius-full);
@@ -977,7 +975,7 @@
   &__icon {
     display: block;
     font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-    font-size: 1.65rem;
+    font-size: 1.35rem;
     font-weight: 300;
     line-height: 1;
     transform: translateY(-0.04em);
@@ -998,19 +996,20 @@
 
   .calendar-legend--mobile {
     margin-bottom: 0.55rem;
-    overflow-x: auto;
+    justify-content: space-evenly;
     flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-
-    &::-webkit-scrollbar {
-      display: none;
-    }
+    gap: 0.2rem;
+    width: 100%;
+    overflow: visible;
+    padding-inline: 0.25rem;
 
     .legend-item {
-      flex-shrink: 0;
-      font-size: 0.62rem;
-      padding: 0.3rem 0.55rem;
+      flex: 1 1 0;
+      min-width: 0;
+      text-align: center;
+      font-size: 0.55rem;
+      padding: 0.28rem 0.2rem;
+      white-space: nowrap;
     }
   }
 
@@ -1138,6 +1137,33 @@
   }
 }
 
+.calendar-day-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.2;
+
+  &__weekday {
+    font-size: var(--sr-font-size-sm);
+    font-weight: var(--sr-font-weight-extrabold);
+    color: var(--sr-primary);
+    white-space: nowrap;
+  }
+
+  &__date {
+    font-size: var(--sr-font-size-xs);
+    font-weight: var(--sr-font-weight-semibold);
+    color: var(--sr-text-muted);
+    white-space: nowrap;
+  }
+
+  &--compact {
+    flex: 0 1 auto;
+  }
+}
+
 .calendar-filter-results {
   display: flex;
   flex-direction: column;
@@ -1163,20 +1189,13 @@
 
   &__date-row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 0.5rem;
     padding: 0.45rem 0.85rem;
     background: var(--sr-surface-muted);
     border-bottom: 1px solid var(--sr-border);
     border-radius: var(--sr-radius-md) var(--sr-radius-md) 0 0;
-  }
-
-  &__date {
-    margin: 0;
-    font-size: var(--sr-font-size-sm);
-    font-weight: var(--sr-font-weight-bold);
-    color: var(--sr-text-secondary);
   }
 
   &__add {

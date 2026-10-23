@@ -2,6 +2,11 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { TodayReviewsService } from './today-reviews.service';
 import { AuthService } from './auth.service';
 
+type BadgeCapableRegistration = ServiceWorkerRegistration & {
+  setAppBadge?: (contents?: number) => Promise<void>;
+  clearAppBadge?: () => Promise<void>;
+};
+
 @Injectable({ providedIn: 'root' })
 export class TodayCountService {
   private readonly todayReviewsService = inject(TodayReviewsService);
@@ -22,7 +27,7 @@ export class TodayCountService {
   async refresh(): Promise<void> {
     if (!this.authService.userId()) {
       this.countSignal.set(0);
-      this.syncAppIconBadge(0);
+      await this.syncAppIconBadge(0);
       return;
     }
 
@@ -31,10 +36,10 @@ export class TodayCountService {
       const summary = await this.todayReviewsService.loadTodaySummary();
       const count = summary.studies.length + summary.reviews.length;
       this.countSignal.set(count);
-      this.syncAppIconBadge(count);
+      await this.syncAppIconBadge(count);
     } catch {
       this.countSignal.set(0);
-      this.syncAppIconBadge(0);
+      await this.syncAppIconBadge(0);
     } finally {
       this.loadingSignal.set(false);
     }
@@ -42,25 +47,49 @@ export class TodayCountService {
 
   clear(): void {
     this.countSignal.set(0);
-    this.syncAppIconBadge(0);
+    void this.syncAppIconBadge(0);
   }
 
-  /** iOS/Android PWA home screen icon badge (requires installed app). */
-  private syncAppIconBadge(count: number): void {
-    if (typeof navigator === 'undefined') return;
+  /** iOS/Android PWA home screen icon badge (requires installed app + notification permission on iOS). */
+  private async syncAppIconBadge(count: number): Promise<void> {
+    if (typeof window === 'undefined') return;
 
-    const nav = navigator as Navigator & {
-      setAppBadge?: (contents?: number) => Promise<void>;
-      clearAppBadge?: () => Promise<void>;
-    };
-
-    if (count > 0 && typeof nav.setAppBadge === 'function') {
-      void nav.setAppBadge(count).catch(() => undefined);
+    // iOS only shows the home screen badge after notification permission is granted.
+    if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
       return;
     }
 
-    if (typeof nav.clearAppBadge === 'function') {
-      void nav.clearAppBadge().catch(() => undefined);
+    const value = count > 0 ? count : 0;
+
+    try {
+      if (value > 0 && typeof navigator.setAppBadge === 'function') {
+        await navigator.setAppBadge(value);
+        return;
+      }
+
+      if (value === 0 && typeof navigator.clearAppBadge === 'function') {
+        await navigator.clearAppBadge();
+        return;
+      }
+    } catch {
+      /* try service worker registration next */
+    }
+
+    if (!('serviceWorker' in navigator)) return;
+
+    try {
+      const registration = (await navigator.serviceWorker.ready) as BadgeCapableRegistration;
+
+      if (value > 0 && typeof registration.setAppBadge === 'function') {
+        await registration.setAppBadge(value);
+        return;
+      }
+
+      if (typeof registration.clearAppBadge === 'function') {
+        await registration.clearAppBadge();
+      }
+    } catch {
+      /* badge optional */
     }
   }
 }

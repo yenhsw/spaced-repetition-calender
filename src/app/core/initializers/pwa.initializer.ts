@@ -4,11 +4,13 @@ import { SwPush } from '@angular/service-worker';
 import { PwaInstallService } from '../services/pwa-install.service';
 import { PushNotificationService } from '../services/push-notification.service';
 import { AuthService } from '../services/auth.service';
+import { TodayCountService } from '../services/today-count.service';
 
 export function pwaInitializer(): () => Promise<void> {
   const pwaInstall = inject(PwaInstallService);
   const pushService = inject(PushNotificationService);
   const authService = inject(AuthService);
+  const todayCount = inject(TodayCountService);
   const swPush = inject(SwPush, { optional: true });
   const router = inject(Router);
 
@@ -20,6 +22,10 @@ export function pwaInitializer(): () => Promise<void> {
         const data = notification.data as { url?: string } | undefined;
         const target = data?.url ?? '/spaced-repetition/today';
         void router.navigateByUrl(target);
+      });
+
+      swPush.messages.subscribe(() => {
+        void todayCount.refresh();
       });
     }
 

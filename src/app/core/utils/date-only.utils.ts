@@ -76,10 +76,14 @@ export function formatLongDisplayDate(iso: DateOnly, locale = 'en-GB'): string {
   });
 }
 
+/** e.g. Tuesday / Thứ Bảy */
+export function formatWeekdayLong(iso: DateOnly, locale = 'vi-VN'): string {
+  return new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(toLocalDate(iso));
+}
+
 /** e.g. Tuesday, 21 October 2026 / Thứ Ba, 21 tháng 10, 2026 */
 export function formatWeekdayDisplayDate(iso: DateOnly, locale = 'vi-VN'): string {
-  const weekday = new Intl.DateTimeFormat(locale, { weekday: 'long' }).format(toLocalDate(iso));
-  return `${weekday}, ${formatLongDisplayDate(iso, locale)}`;
+  return `${formatWeekdayLong(iso, locale)}, ${formatLongDisplayDate(iso, locale)}`;
 }
 
 /** e.g. 20/10/2026 (vi-VN) */

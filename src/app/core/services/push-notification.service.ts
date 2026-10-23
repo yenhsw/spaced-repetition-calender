@@ -4,6 +4,7 @@ import { SwPush } from '@angular/service-worker';
 import { environment } from '../../../environments/environment';
 import { SupabaseService } from './supabase.service';
 import { AuthService } from './auth.service';
+import { TodayCountService } from './today-count.service';
 
 export type PushSupportState = 'unsupported' | 'blocked' | 'default' | 'granted' | 'no-vapid';
 
@@ -23,6 +24,7 @@ export class PushNotificationService {
   private readonly swPush = inject(SwPush, { optional: true });
   private readonly supabaseService = inject(SupabaseService);
   private readonly authService = inject(AuthService);
+  private readonly todayCount = inject(TodayCountService);
 
   readonly supportState = signal<PushSupportState>('unsupported');
   readonly subscribedOnDevice = signal(false);
@@ -78,6 +80,7 @@ export class PushNotificationService {
       await this.saveSubscription(subscription);
       this.supportState.set('granted');
       this.subscribedOnDevice.set(true);
+      await this.todayCount.refresh();
     } finally {
       this.loading.set(false);
     }

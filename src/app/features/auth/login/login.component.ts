@@ -46,7 +46,10 @@ export class LoginComponent {
     try {
       const { username, password } = this.form.getRawValue();
       await this.authService.signIn(username, password);
-      await this.router.navigate(['/spaced-repetition']);
+      if (typeof window !== 'undefined') {
+        window.scrollTo(0, 0);
+      }
+      await this.router.navigate(['/spaced-repetition/today']);
     } catch (err: unknown) {
       this.errorMessage.set(mapAuthErrorMessage(err, this.i18n));
     } finally {

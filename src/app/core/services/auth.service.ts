@@ -53,6 +53,7 @@ export class AuthService {
       }
       this.profileSignal.set(profile);
       await this.runPushInitAfterLogin();
+      await this.runTodayCountRefreshAfterLogin();
     } else {
       this.profileSignal.set(null);
     }
@@ -109,6 +110,14 @@ export class AuthService {
       await this.injector.get(PushNotificationService).initAfterLogin();
     } catch {
       /* push optional */
+    }
+  }
+
+  private async runTodayCountRefreshAfterLogin(): Promise<void> {
+    try {
+      await this.injector.get(TodayCountService).refresh();
+    } catch {
+      /* optional */
     }
   }
 

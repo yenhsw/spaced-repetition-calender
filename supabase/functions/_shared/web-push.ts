@@ -15,6 +15,8 @@ export interface WebPushPayload {
   title: string;
   body: string;
   url?: string;
+  /** Home screen icon badge count (iOS PWA). */
+  badgeCount?: number;
 }
 
 let vapidConfigured = false;
@@ -37,6 +39,11 @@ export function configureWebPush(): boolean {
 
 export function buildAngularPushPayload(payload: WebPushPayload): string {
   const url = payload.url ?? '/spaced-repetition/today';
+  const badgeCount =
+    typeof payload.badgeCount === 'number' && payload.badgeCount > 0
+      ? payload.badgeCount
+      : undefined;
+
   return JSON.stringify({
     notification: {
       title: payload.title,
@@ -45,6 +52,7 @@ export function buildAngularPushPayload(payload: WebPushPayload): string {
       badge: '/icons/icon-192.png',
       data: {
         url,
+        badgeCount,
         onActionClick: {
           default: {
             operation: 'navigate',
