@@ -996,8 +996,22 @@
     }
   }
 
-  .calendar-page__header {
-    display: none;
+  .calendar-legend--mobile {
+    margin-bottom: 0.55rem;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .legend-item {
+      flex-shrink: 0;
+      font-size: 0.62rem;
+      padding: 0.3rem 0.55rem;
+    }
   }
 
   .calendar-mobile-nav {

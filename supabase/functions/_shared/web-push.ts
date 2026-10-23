@@ -41,8 +41,8 @@ export function buildAngularPushPayload(payload: WebPushPayload): string {
     notification: {
       title: payload.title,
       body: payload.body,
-      icon: '/icons/icon-192.svg',
-      badge: '/icons/icon-192.svg',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
       data: {
         url,
         onActionClick: {

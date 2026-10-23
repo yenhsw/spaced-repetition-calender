@@ -22,15 +22,19 @@ export class TodayCountService {
   async refresh(): Promise<void> {
     if (!this.authService.userId()) {
       this.countSignal.set(0);
+      this.syncAppIconBadge(0);
       return;
     }
 
     this.loadingSignal.set(true);
     try {
       const summary = await this.todayReviewsService.loadTodaySummary();
-      this.countSignal.set(summary.studies.length + summary.reviews.length);
+      const count = summary.studies.length + summary.reviews.length;
+      this.countSignal.set(count);
+      this.syncAppIconBadge(count);
     } catch {
       this.countSignal.set(0);
+      this.syncAppIconBadge(0);
     } finally {
       this.loadingSignal.set(false);
     }
@@ -38,5 +42,25 @@ export class TodayCountService {
 
   clear(): void {
     this.countSignal.set(0);
+    this.syncAppIconBadge(0);
+  }
+
+  /** iOS/Android PWA home screen icon badge (requires installed app). */
+  private syncAppIconBadge(count: number): void {
+    if (typeof navigator === 'undefined') return;
+
+    const nav = navigator as Navigator & {
+      setAppBadge?: (contents?: number) => Promise<void>;
+      clearAppBadge?: () => Promise<void>;
+    };
+
+    if (count > 0 && typeof nav.setAppBadge === 'function') {
+      void nav.setAppBadge(count).catch(() => undefined);
+      return;
+    }
+
+    if (typeof nav.clearAppBadge === 'function') {
+      void nav.clearAppBadge().catch(() => undefined);
+    }
   }
 }

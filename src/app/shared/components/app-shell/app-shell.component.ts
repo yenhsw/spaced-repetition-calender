@@ -3,7 +3,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
-import { PwaInstallService } from '../../../core/services/pwa-install.service';
 import { TodayCountService } from '../../../core/services/today-count.service';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { TranslationService } from '../../../core/i18n/translation.service';
@@ -18,7 +17,6 @@ import { LanguageSwitcherComponent } from '../language-switcher/language-switche
 })
 export class AppShellComponent implements OnInit {
   protected readonly authService = inject(AuthService);
-  protected readonly pwaInstall = inject(PwaInstallService);
   protected readonly todayCount = inject(TodayCountService);
   private readonly i18n = inject(TranslationService);
   private readonly router = inject(Router);
@@ -55,11 +53,4 @@ export class AppShellComponent implements OnInit {
     await this.authService.signOut();
   }
 
-  async installPwa(): Promise<void> {
-    await this.pwaInstall.promptInstall();
-  }
-
-  dismissPwa(): void {
-    this.pwaInstall.dismissPrompt();
-  }
 }

@@ -1,24 +1,20 @@
 <div class="calendar-page">
-  <div class="calendar-page__header">
-    <div>
-      <h1>{{ 'calendar.title' | translate }}</h1>
-      <p class="calendar-page__hint">
-        @if (isMobileView()) {
-          {{ 'calendar.hintMobile' | translate }}
-        } @else {
-          {{ 'calendar.hintDesktop' | translate }}
-        }
-      </p>
-    </div>
+  @if (!isMobileView()) {
+    <div class="calendar-page__header">
+      <div>
+        <h1>{{ 'calendar.title' | translate }}</h1>
+        <p class="calendar-page__hint">{{ 'calendar.hintDesktop' | translate }}</p>
+      </div>
 
-    <div class="calendar-legend" role="list" [attr.aria-label]="'calendar.legend' | translate">
-      <span class="legend-item legend-item--study" role="listitem">{{ 'calendar.legend.study' | translate }}</span>
-      <span class="legend-item legend-item--review" role="listitem">{{ 'calendar.legend.review' | translate }}</span>
-      <span class="legend-item legend-item--today" role="listitem">{{ 'calendar.legend.today' | translate }}</span>
-      <span class="legend-item legend-item--completed" role="listitem">{{ 'calendar.legend.completed' | translate }}</span>
-      <span class="legend-item legend-item--overdue" role="listitem">{{ 'calendar.legend.overdue' | translate }}</span>
+      <div class="calendar-legend" role="list" [attr.aria-label]="'calendar.legend' | translate">
+        <span class="legend-item legend-item--study" role="listitem">{{ 'calendar.legend.study' | translate }}</span>
+        <span class="legend-item legend-item--review" role="listitem">{{ 'calendar.legend.review' | translate }}</span>
+        <span class="legend-item legend-item--today" role="listitem">{{ 'calendar.legend.today' | translate }}</span>
+        <span class="legend-item legend-item--completed" role="listitem">{{ 'calendar.legend.completed' | translate }}</span>
+        <span class="legend-item legend-item--overdue" role="listitem">{{ 'calendar.legend.overdue' | translate }}</span>
+      </div>
     </div>
-  </div>
+  }
 
   @if (errorMessage()) {
     <div class="alert alert-error">{{ errorMessage() }}</div>
@@ -33,6 +29,14 @@
     }
 
     @if (isMobileView()) {
+      <div class="calendar-legend calendar-legend--mobile" role="list" [attr.aria-label]="'calendar.legend' | translate">
+        <span class="legend-item legend-item--study" role="listitem">{{ 'calendar.legend.study' | translate }}</span>
+        <span class="legend-item legend-item--review" role="listitem">{{ 'calendar.legend.review' | translate }}</span>
+        <span class="legend-item legend-item--today" role="listitem">{{ 'calendar.legend.today' | translate }}</span>
+        <span class="legend-item legend-item--completed" role="listitem">{{ 'calendar.legend.completed' | translate }}</span>
+        <span class="legend-item legend-item--overdue" role="listitem">{{ 'calendar.legend.overdue' | translate }}</span>
+      </div>
+
       <nav class="calendar-mobile-nav" [attr.aria-label]="'calendar.mobile.nav' | translate">
         <div class="calendar-mobile-nav__modes">
           <button

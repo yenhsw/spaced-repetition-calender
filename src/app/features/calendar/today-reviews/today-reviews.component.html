@@ -31,12 +31,6 @@
         <a routerLink="/spaced-repetition" class="btn btn-primary">{{ 'today.empty.cta' | translate }}</a>
       </section>
     } @else {
-      @if (data.overdueCount > 0) {
-        <div class="today-page__banner today-page__banner--overdue">
-          {{ 'today.overdueBanner' | translate:{ count: data.overdueCount } }}
-        </div>
-      }
-
       @if (data.studies.length > 0) {
         <section class="today-section">
           <h2 class="today-section__title">{{ 'today.studySection' | translate }}</h2>

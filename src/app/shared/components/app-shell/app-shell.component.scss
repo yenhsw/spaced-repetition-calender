@@ -97,6 +97,12 @@
 .app-header__nav-icon {
   font-size: 0.85rem;
   line-height: 1;
+
+  &--svg {
+    width: 1rem;
+    height: 1rem;
+    display: block;
+  }
 }
 
 .app-header__nav-badge,
@@ -304,7 +310,7 @@
 }
 
 @media (max-width: 480px) {
-  .app-header__nav a span:not(.app-header__nav-icon):not(.app-header__nav-badge) {
+  .app-header__nav-label {
     display: none;
   }
 
