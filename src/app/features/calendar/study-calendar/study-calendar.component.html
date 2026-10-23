@@ -344,14 +344,6 @@
             <span class="modal__eyebrow">{{ 'calendar.dailyEvents' | translate }}</span>
             <h2>{{ formatDailyListDate(selectedDate() ?? '') }}</h2>
           </div>
-          <button
-            type="button"
-            class="modal__close"
-            [attr.aria-label]="'calendar.dailyEvents.close' | translate"
-            (click)="closeModal()"
-          >
-            <span class="icon-btn-round__glyph" aria-hidden="true">×</span>
-          </button>
         </div>
         <div class="modal__body daily-events-panel">
           @if (dailyEvents().length === 0) {
@@ -409,18 +401,21 @@
           }
 
         </div>
-        @if (!readOnly) {
-          <div class="modal__footer modal__footer--stack">
+        <div class="modal__footer modal__footer--compact-actions">
+          @if (!readOnly) {
             <button
               type="button"
-              class="btn btn-primary btn-block"
+              class="btn btn-primary btn-sm"
               [attr.aria-label]="'calendar.dailyEvents.addTopic' | translate"
               (click)="openCreateTopic(selectedDate() ?? '')"
             >
               {{ 'calendar.addTopic' | translate }}
             </button>
-          </div>
-        }
+          }
+          <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">
+            {{ 'calendar.btn.close' | translate }}
+          </button>
+        </div>
       }
 
       @case ('create-topic') {
@@ -429,9 +424,6 @@
             <span class="modal__eyebrow">{{ 'nav.calendar' | translate }}</span>
             <h2>{{ 'calendar.addTopic' | translate }}</h2>
           </div>
-          <button type="button" class="modal__close" (click)="closeModal()">
-            <span class="icon-btn-round__glyph" aria-hidden="true">×</span>
-          </button>
         </div>
         <form [formGroup]="topicForm" (ngSubmit)="submitCreateTopic()" class="modal__form">
           <div class="modal__body">
@@ -483,9 +475,13 @@
             <span class="field-hint">{{ 'calendar.form.reminderTimeHint' | translate }}</span>
           </div>
           </div>
-          <div class="modal__footer">
-            <button type="button" class="btn btn-ghost" (click)="closeModal()">{{ 'calendar.btn.cancel' | translate }}</button>
-            <button type="submit" class="btn btn-primary" [disabled]="loading()">{{ 'calendar.btn.createTopic' | translate }}</button>
+          <div class="modal__footer modal__footer--compact-actions">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">
+              {{ 'calendar.btn.close' | translate }}
+            </button>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="loading()">
+              {{ 'calendar.btn.createTopic' | translate }}
+            </button>
           </div>
         </form>
       }
@@ -497,9 +493,6 @@
               <span class="modal__eyebrow">{{ 'calendar.topicDetail' | translate }}</span>
               <h2>{{ topic.title }}</h2>
             </div>
-            <button type="button" class="modal__close" (click)="closeModal()">
-            <span class="icon-btn-round__glyph" aria-hidden="true">×</span>
-          </button>
           </div>
           <div class="modal__body">
             <div class="info-grid">
@@ -545,7 +538,7 @@
                 </p>
                 <button
                   type="button"
-                  class="btn btn-success btn-block"
+                  class="btn btn-success btn-sm"
                   [disabled]="loading()"
                   (click)="completeReviewFromTimeline(nextReview)"
                 >
@@ -598,8 +591,8 @@
               />
             </section>
           </div>
-          @if (!readOnly) {
-            <div class="modal__footer modal__footer--compact-actions">
+          <div class="modal__footer modal__footer--compact-actions">
+            @if (!readOnly) {
               <button type="button" class="btn btn-ghost btn-sm" (click)="openEditTopic()">
                 {{ 'calendar.btn.editTopic' | translate }}
               </button>
@@ -609,8 +602,11 @@
               <button type="button" class="btn btn-danger btn-sm" (click)="deleteTopic()">
                 {{ 'calendar.btn.deleteTopic' | translate }}
               </button>
-            </div>
-          }
+            }
+            <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">
+              {{ 'calendar.btn.close' | translate }}
+            </button>
+          </div>
         }
       }
 
@@ -622,9 +618,6 @@
                 <span class="modal__eyebrow">{{ 'calendar.reviewDetail' | translate }}</span>
                 <h2>{{ reviewScheduleService.offsetLabel(review.day_offset) }} · {{ topic.title }}</h2>
               </div>
-              <button type="button" class="modal__close" (click)="closeModal()">
-            <span class="icon-btn-round__glyph" aria-hidden="true">×</span>
-          </button>
             </div>
             <div class="modal__body">
               <div class="info-grid">
@@ -660,16 +653,19 @@
                 <div class="alert alert-error">{{ scheduleError() }}</div>
               }
             </div>
-            @if (!readOnly && review.status === ReviewStatus.PENDING) {
-              <div class="modal__footer">
-                <button type="button" class="btn btn-ghost" (click)="openEditSchedule()">
+            <div class="modal__footer modal__footer--compact-actions">
+              @if (!readOnly && review.status === ReviewStatus.PENDING) {
+                <button type="button" class="btn btn-ghost btn-sm" (click)="openEditSchedule()">
                   {{ 'calendar.btn.editSchedule' | translate }}
                 </button>
-                <button type="button" class="btn btn-success" (click)="completeReview()">
+                <button type="button" class="btn btn-success btn-sm" (click)="completeReview()">
                   {{ 'calendar.btn.markCompleted' | translate }}
                 </button>
-              </div>
-            }
+              }
+              <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">
+                {{ 'calendar.btn.close' | translate }}
+              </button>
+            </div>
           }
         }
       }
@@ -681,9 +677,6 @@
               <span class="modal__eyebrow">{{ 'calendar.editSchedule' | translate }}</span>
               <h2>{{ topic.title }}</h2>
             </div>
-            <button type="button" class="modal__close" (click)="backToTopicDetail()">
-              <span class="icon-btn-round__glyph" aria-hidden="true">×</span>
-            </button>
           </div>
           <div class="modal__body">
             <div class="form-group current-step-picker">
@@ -714,12 +707,15 @@
             />
           </div>
           @if (!readOnly) {
-            <div class="modal__footer modal__footer--between">
-              <button type="button" class="btn btn-ghost" (click)="backToTopicDetail()">
+            <div class="modal__footer modal__footer--compact-actions">
+              <button type="button" class="btn btn-ghost btn-sm" (click)="backToTopicDetail()">
                 {{ 'calendar.btn.backToTopic' | translate }}
               </button>
-              <button type="button" class="btn btn-primary" (click)="openAddStep()">
+              <button type="button" class="btn btn-primary btn-sm" (click)="openAddStep()">
                 {{ 'calendar.btn.addStep' | translate }}
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">
+                {{ 'calendar.btn.close' | translate }}
               </button>
             </div>
           }
@@ -732,9 +728,6 @@
             <span class="modal__eyebrow">{{ 'calendar.editTopic' | translate }}</span>
             <h2>{{ selectedTopic()?.title }}</h2>
           </div>
-          <button type="button" class="modal__close" (click)="backFromEditTopic()">
-            <span class="icon-btn-round__glyph" aria-hidden="true">×</span>
-          </button>
         </div>
         <form [formGroup]="editTopicForm" (ngSubmit)="submitEditTopic()" class="modal__form">
           <div class="modal__body">
@@ -773,9 +766,16 @@
             <span class="field-hint">{{ 'calendar.form.reminderTimeHint' | translate }}</span>
           </div>
           </div>
-          <div class="modal__footer">
-            <button type="button" class="btn btn-ghost" (click)="backFromEditTopic()">{{ 'calendar.btn.back' | translate }}</button>
-            <button type="submit" class="btn btn-primary" [disabled]="loading()">{{ 'calendar.btn.save' | translate }}</button>
+          <div class="modal__footer modal__footer--compact-actions">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="backFromEditTopic()">
+              {{ 'calendar.btn.back' | translate }}
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">
+              {{ 'calendar.btn.close' | translate }}
+            </button>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="loading()">
+              {{ 'calendar.btn.save' | translate }}
+            </button>
           </div>
         </form>
       }
@@ -786,9 +786,6 @@
             <span class="modal__eyebrow">{{ 'calendar.editSchedule' | translate }}</span>
             <h2>{{ 'calendar.addStep' | translate }}</h2>
           </div>
-          <button type="button" class="modal__close" (click)="backFromScheduleAction()">
-            <span class="icon-btn-round__glyph" aria-hidden="true">×</span>
-          </button>
         </div>
         <form [formGroup]="addStepForm" (ngSubmit)="submitAddStep()" class="modal__form add-step-form">
           <div class="modal__body">
@@ -823,9 +820,14 @@
             </div>
           }
           </div>
-          <div class="modal__footer">
-            <button type="button" class="btn btn-ghost" (click)="backFromScheduleAction()">{{ 'calendar.btn.back' | translate }}</button>
-            <button type="submit" class="btn btn-primary" [disabled]="loading() || !getAddStepPreview()?.valid">
+          <div class="modal__footer modal__footer--compact-actions">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="backFromScheduleAction()">
+              {{ 'calendar.btn.back' | translate }}
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">
+              {{ 'calendar.btn.close' | translate }}
+            </button>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="loading() || !getAddStepPreview()?.valid">
               {{ 'calendar.btn.addStep' | translate }}
             </button>
           </div>
@@ -838,9 +840,6 @@
             <span class="modal__eyebrow">{{ 'calendar.editSchedule' | translate }}</span>
             <h2>{{ 'calendar.replaceStep' | translate }}</h2>
           </div>
-          <button type="button" class="modal__close" (click)="backFromScheduleAction()">
-            <span class="icon-btn-round__glyph" aria-hidden="true">×</span>
-          </button>
         </div>
         <form [formGroup]="replaceStepForm" (ngSubmit)="submitReplaceStep()" class="modal__form">
           <div class="modal__body">
@@ -852,9 +851,16 @@
               <div class="alert alert-error">{{ scheduleError() }}</div>
             }
           </div>
-          <div class="modal__footer">
-            <button type="button" class="btn btn-ghost" (click)="backFromScheduleAction()">{{ 'calendar.btn.back' | translate }}</button>
-            <button type="submit" class="btn btn-primary" [disabled]="loading()">{{ 'calendar.btn.replace' | translate }}</button>
+          <div class="modal__footer modal__footer--compact-actions">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="backFromScheduleAction()">
+              {{ 'calendar.btn.back' | translate }}
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">
+              {{ 'calendar.btn.close' | translate }}
+            </button>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="loading()">
+              {{ 'calendar.btn.replace' | translate }}
+            </button>
           </div>
         </form>
       }
