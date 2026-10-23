@@ -312,7 +312,7 @@
       </div>
     }
 
-    @if (isMobileView() && !readOnly) {
+    @if (isMobileView() && !readOnly && !modalMode()) {
       <button
         type="button"
         class="calendar-fab"
@@ -335,9 +335,20 @@
 </div>
 
 @if (modalMode()) {
-  <div class="modal-backdrop" (click)="closeModal()"></div>
-  <div class="modal modal--wide" role="dialog">
-    @switch (modalMode()) {
+  <div class="modal-root" (click)="onModalRootClick($event)">
+    <div
+      class="modal modal--wide"
+      role="dialog"
+      aria-modal="true"
+      (click)="$event.stopPropagation()"
+    >
+      @if (detailLoading()) {
+        <div class="modal__loading-state" aria-busy="true">
+          <div class="modal__loading-spinner"></div>
+          <p>{{ 'calendar.loading' | translate }}</p>
+        </div>
+      } @else {
+        @switch (modalMode()) {
       @case ('daily-events') {
         <div class="modal__header">
           <div class="modal__header-text">
@@ -407,12 +418,13 @@
               type="button"
               class="btn btn-primary btn-sm"
               [attr.aria-label]="'calendar.dailyEvents.addTopic' | translate"
+              [disabled]="actionLoading()"
               (click)="openCreateTopic(selectedDate() ?? '')"
             >
               {{ 'calendar.addTopic' | translate }}
             </button>
           }
-          <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">
+          <button type="button" class="btn btn-ghost btn-sm" [disabled]="actionLoading()" (click)="closeModal()">
             {{ 'calendar.btn.close' | translate }}
           </button>
         </div>
@@ -476,10 +488,10 @@
           </div>
           </div>
           <div class="modal__footer modal__footer--compact-actions">
-            <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">
+            <button type="button" class="btn btn-ghost btn-sm" [disabled]="actionLoading()" (click)="closeModal()">
               {{ 'calendar.btn.close' | translate }}
             </button>
-            <button type="submit" class="btn btn-primary btn-sm" [disabled]="loading()">
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="modalBusy()">
               {{ 'calendar.btn.createTopic' | translate }}
             </button>
           </div>
@@ -539,7 +551,7 @@
                 <button
                   type="button"
                   class="btn btn-success btn-sm"
-                  [disabled]="loading()"
+                  [disabled]="actionLoading()"
                   (click)="completeReviewFromTimeline(nextReview)"
                 >
                   {{ 'calendar.btn.markCompleted' | translate }}
@@ -585,25 +597,25 @@
               <app-schedule-timeline
                 [reviews]="getSortedReviews()"
                 [currentStepOffset]="currentStepOffset() ?? 0"
-                [readOnly]="true"
-                [allowComplete]="!readOnly"
+                [readOnly]="readOnly || actionLoading()"
+                [allowComplete]="!readOnly && !actionLoading()"
                 (completeStep)="completeReviewFromTimeline($event)"
               />
             </section>
           </div>
           <div class="modal__footer modal__footer--compact-actions">
             @if (!readOnly) {
-              <button type="button" class="btn btn-ghost btn-sm" (click)="openEditTopic()">
+              <button type="button" class="btn btn-ghost btn-sm" [disabled]="actionLoading()" (click)="openEditTopic()">
                 {{ 'calendar.btn.editTopic' | translate }}
               </button>
-              <button type="button" class="btn btn-primary btn-sm" (click)="openEditSchedule()">
+              <button type="button" class="btn btn-primary btn-sm" [disabled]="actionLoading()" (click)="openEditSchedule()">
                 {{ 'calendar.btn.editSchedule' | translate }}
               </button>
-              <button type="button" class="btn btn-danger btn-sm" (click)="deleteTopic()">
+              <button type="button" class="btn btn-danger btn-sm" [disabled]="actionLoading()" (click)="deleteTopic()">
                 {{ 'calendar.btn.deleteTopic' | translate }}
               </button>
             }
-            <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">
+            <button type="button" class="btn btn-ghost btn-sm" [disabled]="actionLoading()" (click)="closeModal()">
               {{ 'calendar.btn.close' | translate }}
             </button>
           </div>
@@ -655,14 +667,14 @@
             </div>
             <div class="modal__footer modal__footer--compact-actions">
               @if (!readOnly && review.status === ReviewStatus.PENDING) {
-                <button type="button" class="btn btn-ghost btn-sm" (click)="openEditSchedule()">
+                <button type="button" class="btn btn-ghost btn-sm" [disabled]="actionLoading()" (click)="openEditSchedule()">
                   {{ 'calendar.btn.editSchedule' | translate }}
                 </button>
-                <button type="button" class="btn btn-success btn-sm" (click)="completeReview()">
+                <button type="button" class="btn btn-success btn-sm" [disabled]="actionLoading()" (click)="completeReview()">
                   {{ 'calendar.btn.markCompleted' | translate }}
                 </button>
               }
-              <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">
+              <button type="button" class="btn btn-ghost btn-sm" [disabled]="actionLoading()" (click)="closeModal()">
                 {{ 'calendar.btn.close' | translate }}
               </button>
             </div>
@@ -701,20 +713,20 @@
             <app-schedule-timeline
               [reviews]="getSortedReviews()"
               [currentStepOffset]="currentStepOffset() ?? 0"
-              [readOnly]="readOnly"
+              [readOnly]="readOnly || actionLoading()"
               (replaceStep)="openReplaceStep($event)"
               (deleteStep)="deleteFutureStep($event)"
             />
           </div>
           @if (!readOnly) {
             <div class="modal__footer modal__footer--compact-actions">
-              <button type="button" class="btn btn-ghost btn-sm" (click)="backToTopicDetail()">
+              <button type="button" class="btn btn-ghost btn-sm" [disabled]="actionLoading()" (click)="backToTopicDetail()">
                 {{ 'calendar.btn.backToTopic' | translate }}
               </button>
-              <button type="button" class="btn btn-primary btn-sm" (click)="openAddStep()">
+              <button type="button" class="btn btn-primary btn-sm" [disabled]="actionLoading()" (click)="openAddStep()">
                 {{ 'calendar.btn.addStep' | translate }}
               </button>
-              <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">
+              <button type="button" class="btn btn-ghost btn-sm" [disabled]="actionLoading()" (click)="closeModal()">
                 {{ 'calendar.btn.close' | translate }}
               </button>
             </div>
@@ -767,13 +779,13 @@
           </div>
           </div>
           <div class="modal__footer modal__footer--compact-actions">
-            <button type="button" class="btn btn-ghost btn-sm" (click)="backFromEditTopic()">
+            <button type="button" class="btn btn-ghost btn-sm" [disabled]="actionLoading()" (click)="backFromEditTopic()">
               {{ 'calendar.btn.back' | translate }}
             </button>
-            <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">
+            <button type="button" class="btn btn-ghost btn-sm" [disabled]="actionLoading()" (click)="closeModal()">
               {{ 'calendar.btn.close' | translate }}
             </button>
-            <button type="submit" class="btn btn-primary btn-sm" [disabled]="loading()">
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="modalBusy()">
               {{ 'calendar.btn.save' | translate }}
             </button>
           </div>
@@ -821,13 +833,13 @@
           }
           </div>
           <div class="modal__footer modal__footer--compact-actions">
-            <button type="button" class="btn btn-ghost btn-sm" (click)="backFromScheduleAction()">
+            <button type="button" class="btn btn-ghost btn-sm" [disabled]="actionLoading()" (click)="backFromScheduleAction()">
               {{ 'calendar.btn.back' | translate }}
             </button>
-            <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">
+            <button type="button" class="btn btn-ghost btn-sm" [disabled]="actionLoading()" (click)="closeModal()">
               {{ 'calendar.btn.close' | translate }}
             </button>
-            <button type="submit" class="btn btn-primary btn-sm" [disabled]="loading() || !getAddStepPreview()?.valid">
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="modalBusy() || !getAddStepPreview()?.valid">
               {{ 'calendar.btn.addStep' | translate }}
             </button>
           </div>
@@ -852,18 +864,20 @@
             }
           </div>
           <div class="modal__footer modal__footer--compact-actions">
-            <button type="button" class="btn btn-ghost btn-sm" (click)="backFromScheduleAction()">
+            <button type="button" class="btn btn-ghost btn-sm" [disabled]="actionLoading()" (click)="backFromScheduleAction()">
               {{ 'calendar.btn.back' | translate }}
             </button>
-            <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">
+            <button type="button" class="btn btn-ghost btn-sm" [disabled]="actionLoading()" (click)="closeModal()">
               {{ 'calendar.btn.close' | translate }}
             </button>
-            <button type="submit" class="btn btn-primary btn-sm" [disabled]="loading()">
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="modalBusy()">
               {{ 'calendar.btn.replace' | translate }}
             </button>
           </div>
         </form>
       }
-    }
+        }
+      }
+    </div>
   </div>
 }

@@ -1,3 +1,7 @@
+:host {
+  display: block;
+}
+
 :host ::ng-deep {
   #study-calendar {
     overflow: visible;

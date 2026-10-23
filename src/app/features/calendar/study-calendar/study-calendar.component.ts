@@ -119,6 +119,8 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
 
   protected readonly events = signal<CalendarEvent[]>([]);
   protected readonly loading = signal(false);
+  protected readonly actionLoading = signal(false);
+  protected readonly detailLoading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly scheduleError = signal<string | null>(null);
   protected readonly modalMode = signal<ModalMode>(null);
@@ -667,23 +669,36 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     topicId: string,
     reviewId?: string,
   ): Promise<void> {
+    const targetMode =
+      eventType === CalendarEventType.REVIEW && reviewId ? 'review-detail' : 'topic-detail';
+
     if (!this.modalMode()) {
       this.prepareModalScrollLock();
     }
+
     this.selectedEventType.set(eventType);
     this.selectedReview.set(null);
+    this.selectedTopic.set(null);
     this.scheduleError.set(null);
+    this.detailLoading.set(true);
+    this.modalMode.set(targetMode);
 
-    const topic = await this.studyTopicService.getTopicById(topicId);
-    this.selectedTopic.set(topic);
-    this.initCurrentStep(topic);
+    try {
+      const topic = await this.studyTopicService.getTopicById(topicId);
+      this.selectedTopic.set(topic);
+      this.initCurrentStep(topic);
 
-    if (eventType === CalendarEventType.REVIEW && reviewId) {
-      const review = topic?.study_reviews?.find((r) => r.id === reviewId) ?? null;
-      this.selectedReview.set(review);
-      this.modalMode.set('review-detail');
-    } else {
-      this.modalMode.set('topic-detail');
+      if (eventType === CalendarEventType.REVIEW && reviewId) {
+        const review = topic?.study_reviews?.find((r) => r.id === reviewId) ?? null;
+        this.selectedReview.set(review);
+      }
+    } catch (err: unknown) {
+      this.errorMessage.set(
+        err instanceof Error ? err.message : this.i18n.t('calendar.error.load'),
+      );
+      this.closeModal();
+    } finally {
+      this.detailLoading.set(false);
     }
   }
 
@@ -889,6 +904,14 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     this.dailyEvents.set([]);
     this.currentStepOffset.set(null);
     this.scheduleError.set(null);
+    this.detailLoading.set(false);
+    this.actionLoading.set(false);
+  }
+
+  onModalRootClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget) {
+      this.closeModal();
+    }
   }
 
   async onCurrentStepChange(offset: number): Promise<void> {
@@ -941,7 +964,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    this.loading.set(true);
+    this.actionLoading.set(true);
     this.errorMessage.set(null);
 
     try {
@@ -964,7 +987,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     } catch (err: unknown) {
       this.errorMessage.set(this.mapTopicError(err, 'calendar.error.createTopic'));
     } finally {
-      this.loading.set(false);
+      this.actionLoading.set(false);
     }
   }
 
@@ -996,7 +1019,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     const review = reviewOverride ?? this.selectedReview();
     if (!review || review.status === ReviewStatus.COMPLETED) return;
 
-    this.loading.set(true);
+    this.actionLoading.set(true);
     this.scheduleError.set(null);
 
     try {
@@ -1014,7 +1037,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     } catch (err: unknown) {
       this.scheduleError.set(err instanceof Error ? err.message : this.i18n.t('calendar.error.complete'));
     } finally {
-      this.loading.set(false);
+      this.actionLoading.set(false);
     }
   }
 
@@ -1024,27 +1047,27 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
   }
 
   private lockBodyScroll(): void {
-    if (document.body.classList.contains('sr-modal-open')) return;
+    if (document.documentElement.classList.contains('sr-modal-open')) return;
     if (!this.scrollLockPrepared) {
       this.bodyScrollLockY = window.scrollY;
     }
     this.scrollLockPrepared = false;
-    document.body.style.top = `-${this.bodyScrollLockY}px`;
+    document.documentElement.classList.add('sr-modal-open');
     document.body.classList.add('sr-modal-open');
   }
 
   private unlockBodyScroll(): void {
-    if (!document.body.classList.contains('sr-modal-open')) return;
+    if (!document.documentElement.classList.contains('sr-modal-open')) return;
     const scrollY = this.bodyScrollLockY;
+    document.documentElement.classList.remove('sr-modal-open');
     document.body.classList.remove('sr-modal-open');
-    document.body.style.top = '';
-    const active = document.activeElement;
-    if (active instanceof HTMLElement) {
-      active.blur();
-    }
     requestAnimationFrame(() => {
-      window.scrollTo({ top: scrollY, left: 0, behavior: 'instant' });
+      window.scrollTo(0, scrollY);
     });
+  }
+
+  protected modalBusy(): boolean {
+    return this.actionLoading() || this.detailLoading();
   }
 
   openEditTopic(): void {
@@ -1111,7 +1134,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    this.loading.set(true);
+    this.actionLoading.set(true);
     try {
       const { title, subject, notes, resource_url, reminder_time, study_start_time, study_end_time } =
         this.editTopicForm.getRawValue();
@@ -1132,7 +1155,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     } catch (err: unknown) {
       this.scheduleError.set(err instanceof Error ? err.message : this.i18n.t('calendar.error.update'));
     } finally {
-      this.loading.set(false);
+      this.actionLoading.set(false);
     }
   }
 
@@ -1140,7 +1163,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     const topic = this.selectedTopic();
     if (!topic || !confirm(this.i18n.t('calendar.confirm.deleteTopic', { title: topic.title }))) return;
 
-    this.loading.set(true);
+    this.actionLoading.set(true);
     try {
       await this.studyTopicService.deleteTopic(topic.id);
       this.closeModal();
@@ -1148,7 +1171,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     } catch (err: unknown) {
       this.scheduleError.set(err instanceof Error ? err.message : this.i18n.t('calendar.error.delete'));
     } finally {
-      this.loading.set(false);
+      this.actionLoading.set(false);
     }
   }
 
@@ -1199,7 +1222,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    this.loading.set(true);
+    this.actionLoading.set(true);
     this.scheduleError.set(null);
 
     try {
@@ -1215,7 +1238,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     } catch (err: unknown) {
       this.scheduleError.set(err instanceof Error ? err.message : this.i18n.t('calendar.error.addStep'));
     } finally {
-      this.loading.set(false);
+      this.actionLoading.set(false);
     }
   }
 
@@ -1252,7 +1275,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    this.loading.set(true);
+    this.actionLoading.set(true);
     this.scheduleError.set(null);
 
     try {
@@ -1268,7 +1291,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     } catch (err: unknown) {
       this.scheduleError.set(err instanceof Error ? err.message : this.i18n.t('calendar.error.replaceStep'));
     } finally {
-      this.loading.set(false);
+      this.actionLoading.set(false);
     }
   }
 
@@ -1295,7 +1318,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    this.loading.set(true);
+    this.actionLoading.set(true);
     this.scheduleError.set(null);
 
     try {
@@ -1312,7 +1335,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
     } catch (err: unknown) {
       this.scheduleError.set(err instanceof Error ? err.message : this.i18n.t('calendar.error.deleteStep'));
     } finally {
-      this.loading.set(false);
+      this.actionLoading.set(false);
     }
   }
 
