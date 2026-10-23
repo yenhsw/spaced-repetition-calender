@@ -1,19 +1,19 @@
 <div class="admin-page">
   <div class="admin-page__header">
     <div>
-      <h1>Admin · Spaced Repetition</h1>
-      <p>Search users and open their calendar to manage topics & reviews.</p>
+      <h1>{{ 'admin.title' | translate }}</h1>
+      <p>{{ 'admin.subtitle' | translate }}</p>
     </div>
 
     <div class="search-bar">
       <input
         type="search"
-        placeholder="Search user by name or email..."
+        [placeholder]="'admin.searchPlaceholder' | translate"
         [ngModel]="searchKeyword()"
         (ngModelChange)="searchKeyword.set($event)"
         (keyup.enter)="onSearch()"
       />
-      <button type="button" class="btn btn-primary" (click)="onSearch()">Search</button>
+      <button type="button" class="btn btn-primary" (click)="onSearch()">{{ 'admin.search' | translate }}</button>
     </div>
   </div>
 
@@ -22,27 +22,27 @@
   }
 
   @if (loading()) {
-    <p>Loading...</p>
+    <p>{{ 'app.loading' | translate }}</p>
   } @else {
     <div class="user-table-wrap">
       <table class="user-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Topics</th>
-            <th>Pending</th>
-            <th>Overdue</th>
-            <th>Completed</th>
-            <th>Role</th>
+            <th>{{ 'admin.col.name' | translate }}</th>
+            <th>{{ 'admin.col.email' | translate }}</th>
+            <th>{{ 'admin.col.topics' | translate }}</th>
+            <th>{{ 'admin.col.pending' | translate }}</th>
+            <th>{{ 'admin.col.overdue' | translate }}</th>
+            <th>{{ 'admin.col.completed' | translate }}</th>
+            <th>{{ 'admin.col.role' | translate }}</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           @for (profile of profiles(); track profile.id) {
             <tr>
-              <td>{{ profile.display_name ?? '—' }}</td>
-              <td>{{ profile.email ?? '—' }}</td>
+              <td>{{ profile.display_name ?? ('app.empty' | translate) }}</td>
+              <td>{{ profile.email ?? ('app.empty' | translate) }}</td>
               <td>{{ profile.stats?.topicCount ?? 0 }}</td>
               <td>{{ profile.stats?.pendingCount ?? 0 }}</td>
               <td>
@@ -58,20 +58,20 @@
               </td>
               <td class="admin-actions">
                 <a [routerLink]="['/admin/users', profile.id, 'calendar']" class="btn btn-sm btn-primary">
-                  Calendar
+                  {{ 'admin.btn.calendar' | translate }}
                 </a>
                 <a
                   [routerLink]="['/admin/users', profile.id, 'notifications']"
                   class="btn btn-sm btn-ghost"
-                  aria-label="Manage notification settings"
+                  [attr.aria-label]="'admin.btn.notificationsAria' | translate"
                 >
-                  Notifications
+                  {{ 'admin.btn.notifications' | translate }}
                 </a>
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="8" class="empty-row">No users found.</td>
+              <td colspan="8" class="empty-row">{{ 'admin.empty' | translate }}</td>
             </tr>
           }
         </tbody>

@@ -24,7 +24,7 @@ export class StudyReviewService {
   ): Promise<StudyReview[]> {
     let query = this.supabaseService.supabase
       .from('study_reviews')
-      .select('*, study_topic:study_topics(id, title, study_date)')
+      .select('*, study_topic:study_topics(id, title, study_date, study_start_time, study_end_time, reminder_time)')
       .eq('user_id', userId)
       .order('review_date', { ascending: true });
 
@@ -44,7 +44,7 @@ export class StudyReviewService {
         completed_at: new Date().toISOString(),
       })
       .eq('id', reviewId)
-      .select('*, study_topic:study_topics(id, title, study_date)')
+      .select('*, study_topic:study_topics(id, title, study_date, study_start_time, study_end_time, reminder_time)')
       .single();
 
     if (error) throw error;
@@ -76,7 +76,7 @@ export class StudyReviewService {
   async replaceReviewStep(request: ReplaceReviewStepRequest): Promise<StudyReview> {
     const { data: review, error: fetchError } = await this.supabaseService.supabase
       .from('study_reviews')
-      .select('*, study_topic:study_topics(id, title, study_date)')
+      .select('*, study_topic:study_topics(id, title, study_date, study_start_time, study_end_time, reminder_time)')
       .eq('id', request.reviewId)
       .single();
 

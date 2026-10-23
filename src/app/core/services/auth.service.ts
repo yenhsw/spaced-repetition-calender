@@ -5,6 +5,7 @@ import { SupabaseService } from './supabase.service';
 import { ProfileService } from './profile.service';
 import { UserProfile } from '../models/profile.model';
 import { UserRole } from '../enums/user-role.enum';
+import { normalizeUsername, usernameToAuthEmail } from '../utils/auth.utils';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -43,7 +44,10 @@ export class AuthService {
     this.sessionSignal.set(session);
 
     if (session?.user) {
-      const profile = await this.profileService.fetchProfile(session.user.id);
+      let profile = await this.profileService.fetchProfile(session.user.id);
+      if (!profile) {
+        profile = await this.profileService.ensureProfile(session.user);
+      }
       this.profileSignal.set(profile);
     } else {
       this.profileSignal.set(null);
@@ -52,53 +56,35 @@ export class AuthService {
     this.loadingSignal.set(false);
   }
 
-  async signUp(email: string, password: string, displayName: string): Promise<void> {
-    const { error } = await this.supabaseService.supabase.auth.signUp({
-      email,
+  async signUp(username: string, password: string, displayName?: string): Promise<void> {
+    const normalized = normalizeUsername(username);
+    const name = displayName?.trim() || normalized;
+
+    const { data, error } = await this.supabaseService.supabase.auth.signUp({
+      email: usernameToAuthEmail(normalized),
       password,
-      options: { data: { display_name: displayName } },
+      options: {
+        data: {
+          display_name: name,
+          username: normalized,
+        },
+      },
     });
     if (error) throw error;
+
+    if (!data.session) {
+      await this.signIn(normalized, password);
+    } else {
+      await this.handleSession(data.session);
+    }
   }
 
-  async signIn(email: string, password: string): Promise<void> {
+  async signIn(username: string, password: string): Promise<void> {
     const { error } = await this.supabaseService.supabase.auth.signInWithPassword({
-      email,
+      email: usernameToAuthEmail(username),
       password,
     });
     if (error) throw error;
-  }
-
-  async signInWithGoogle(): Promise<void> {
-    if (!this.supabaseService.isBrowser) return;
-
-    const redirectTo = `${window.location.origin}/auth/callback`;
-    const { error } = await this.supabaseService.supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo },
-    });
-    if (error) throw error;
-  }
-
-  async completeOAuthSignIn(): Promise<void> {
-    if (!this.supabaseService.isBrowser) {
-      throw new Error('OAuth is only available in the browser');
-    }
-
-    const supabase = this.supabaseService.supabase;
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-
-    if (code) {
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-      if (error) throw error;
-    }
-
-    const { data, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    if (!data.session) throw new Error('Không lấy được session sau OAuth');
-
-    await this.handleSession(data.session);
   }
 
   async signOut(): Promise<void> {

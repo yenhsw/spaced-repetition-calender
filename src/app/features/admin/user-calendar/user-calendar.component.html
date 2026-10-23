@@ -1,9 +1,9 @@
 <div class="user-calendar-page">
-  <a routerLink="/admin/users" class="back-link">← Back to Admin</a>
+  <a routerLink="/admin/users" class="back-link">{{ 'admin.userCalendar.back' | translate }}</a>
 
   <div class="user-calendar-page__banner">
-    <h1>Calendar · {{ profileName || userId() }}</h1>
-    <p>Admin view — quản lý Topic và Review Schedule cho user này.</p>
+    <h1>{{ 'admin.userCalendar' | translate }} · {{ profileName || userId() }}</h1>
+    <p>{{ 'admin.userCalendar.subtitle' | translate }}</p>
   </div>
 
   <app-study-calendar [userId]="userId()" />

@@ -1,12 +1,22 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { TranslationService } from '../../../core/i18n/translation.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { LanguageSwitcherComponent } from '../../../shared/components/language-switcher/language-switcher.component';
+import { isValidUsername, mapAuthErrorMessage } from '../../../core/utils/auth.utils';
+
+function usernameValidator(control: AbstractControl): ValidationErrors | null {
+  const value = control.value as string;
+  if (!value) return null;
+  return isValidUsername(value) ? null : { invalidUsername: true };
+}
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, TranslatePipe, LanguageSwitcherComponent],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
 })
@@ -14,14 +24,14 @@ export class RegisterComponent {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly i18n = inject(TranslationService);
 
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly successMessage = signal<string | null>(null);
 
   protected readonly form = this.fb.nonNullable.group({
-    displayName: ['', [Validators.required, Validators.minLength(2)]],
-    email: ['', [Validators.required, Validators.email]],
+    username: ['', [Validators.required, usernameValidator]],
+    displayName: [''],
     password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
@@ -33,15 +43,13 @@ export class RegisterComponent {
 
     this.loading.set(true);
     this.errorMessage.set(null);
-    this.successMessage.set(null);
 
     try {
-      const { displayName, email, password } = this.form.getRawValue();
-      await this.authService.signUp(email, password, displayName);
-      this.successMessage.set('Đăng ký thành công! Kiểm tra email để xác nhận (nếu bật), sau đó đăng nhập.');
-      setTimeout(() => this.router.navigate(['/login']), 2000);
+      const { username, displayName, password } = this.form.getRawValue();
+      await this.authService.signUp(username, password, displayName || undefined);
+      await this.router.navigate(['/spaced-repetition']);
     } catch (err: unknown) {
-      this.errorMessage.set(err instanceof Error ? err.message : 'Đăng ký thất bại');
+      this.errorMessage.set(mapAuthErrorMessage(err, this.i18n));
     } finally {
       this.loading.set(false);
     }

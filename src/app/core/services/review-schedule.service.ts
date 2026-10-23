@@ -1,11 +1,11 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { DEFAULT_SPACED_REPETITION_INTERVALS } from '../constants/spaced-repetition.constants';
 import { StudyReview } from '../models/study-review.model';
 import { ReviewStatus } from '../enums/review-status.enum';
+import { TranslationService } from '../i18n/translation.service';
 import {
   addDays,
   formatDateISO,
-  formatDisplayDate,
   isPastDate,
   isTodayOrFuture,
   parseISODate,
@@ -35,6 +35,8 @@ export interface OffsetPreviewValidation {
 
 @Injectable({ providedIn: 'root' })
 export class ReviewScheduleService {
+  private readonly i18n = inject(TranslationService);
+
   computeReviewDate(studyDateISO: string, dayOffset: number): string {
     const studyDate = parseISODate(studyDateISO);
     return formatDateISO(addDays(studyDate, dayOffset));
@@ -65,7 +67,7 @@ export class ReviewScheduleService {
         valid: false,
         reviewDate: null,
         intervalLabel: null,
-        errors: ['Review interval must be greater than 0.'],
+        errors: [this.i18n.t('validation.intervalPositive')],
       };
     }
 
@@ -73,17 +75,17 @@ export class ReviewScheduleService {
     const reviewDate = this.computeReviewDate(studyDateISO, newOffset);
 
     if (reviews.some((r) => r.day_offset === newOffset)) {
-      errors.push(`N+${newOffset} already exists in this review schedule.`);
+      errors.push(this.i18n.t('validation.duplicateOffset', { offset: newOffset }));
     }
 
     if (newOffset <= currentStepOffset) {
       errors.push(
-        `New review interval must be greater than the current step (N+${currentStepOffset}).`,
+        this.i18n.t('validation.offsetAfterCurrent', { current: currentStepOffset }),
       );
     }
 
     if (isPastDate(reviewDate)) {
-      errors.push('This review date has already passed.');
+      errors.push(this.i18n.t('validation.pastDate'));
     }
 
     return {
@@ -102,11 +104,11 @@ export class ReviewScheduleService {
     currentStepOffset: number,
   ): string | null {
     if (review.status === ReviewStatus.COMPLETED) {
-      return 'Cannot modify a completed review.';
+      return this.i18n.t('validation.cannotModifyCompleted');
     }
 
     if (!this.isFutureEditableStep(review, currentStepOffset)) {
-      return 'Only future pending review steps can be replaced.';
+      return this.i18n.t('validation.replaceFutureOnly');
     }
 
     const otherReviews = allReviews.filter((r) => r.id !== review.id);
@@ -120,11 +122,11 @@ export class ReviewScheduleService {
 
   validateDeleteReview(review: StudyReview, currentStepOffset: number): string | null {
     if (review.status === ReviewStatus.COMPLETED) {
-      return 'Cannot delete a completed review.';
+      return this.i18n.t('validation.cannotDeleteCompleted');
     }
 
     if (!this.isFutureEditableStep(review, currentStepOffset)) {
-      return 'Only future pending review steps can be deleted.';
+      return this.i18n.t('validation.deleteFutureOnly');
     }
 
     return null;
@@ -159,7 +161,7 @@ export class ReviewScheduleService {
   }
 
   offsetLabel(dayOffset: number): string {
-    return dayOffset === 0 ? 'STUDY (N)' : `N+${dayOffset}`;
+    return dayOffset === 0 ? this.i18n.t('calendar.studyDay') : `N+${dayOffset}`;
   }
 
   inferCurrentStepOffset(reviews: StudyReview[]): number {

@@ -4,11 +4,12 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { StudyCalendarComponent } from '../../calendar/study-calendar/study-calendar.component';
 import { ProfileService } from '../../../core/services/profile.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-user-calendar',
   standalone: true,
-  imports: [StudyCalendarComponent, RouterLink],
+  imports: [StudyCalendarComponent, RouterLink, TranslatePipe],
   templateUrl: './user-calendar.component.html',
   styleUrl: './user-calendar.component.scss',
 })

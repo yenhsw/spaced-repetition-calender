@@ -1,22 +1,22 @@
 <div class="calendar-page">
   <div class="calendar-page__header">
     <div>
-      <h1>Lịch học Spaced Repetition</h1>
+      <h1>{{ 'calendar.title' | translate }}</h1>
       <p class="calendar-page__hint">
         @if (isMobileView()) {
-          Chạm ngày để xem danh sách event. Chạm event để xem chi tiết.
+          {{ 'calendar.hintMobile' | translate }}
         } @else {
-          Click ngày để thêm Study Topic. Click event để xem Topic hoặc Review Detail.
+          {{ 'calendar.hintDesktop' | translate }}
         }
       </p>
     </div>
 
-    <div class="calendar-legend" role="list" aria-label="Event legend">
-      <span class="legend-item legend-item--study" role="listitem">Study</span>
-      <span class="legend-item legend-item--review" role="listitem">Review</span>
-      <span class="legend-item legend-item--today" role="listitem">Today</span>
-      <span class="legend-item legend-item--completed" role="listitem">Completed</span>
-      <span class="legend-item legend-item--overdue" role="listitem">Overdue</span>
+    <div class="calendar-legend" role="list" [attr.aria-label]="'calendar.legend' | translate">
+      <span class="legend-item legend-item--study" role="listitem">{{ 'calendar.legend.study' | translate }}</span>
+      <span class="legend-item legend-item--review" role="listitem">{{ 'calendar.legend.review' | translate }}</span>
+      <span class="legend-item legend-item--today" role="listitem">{{ 'calendar.legend.today' | translate }}</span>
+      <span class="legend-item legend-item--completed" role="listitem">{{ 'calendar.legend.completed' | translate }}</span>
+      <span class="legend-item legend-item--overdue" role="listitem">{{ 'calendar.legend.overdue' | translate }}</span>
     </div>
   </div>
 
@@ -24,17 +24,158 @@
     <div class="alert alert-error">{{ errorMessage() }}</div>
   }
 
-  <div class="calendar-card">
+  <div class="calendar-filter-wrap">
+    <form class="calendar-filter" [formGroup]="dateFilterForm" (ngSubmit)="applyDateFilter()">
+      <label class="calendar-filter__label" for="filterFromDate">{{ 'calendar.filter.fromDate' | translate }}</label>
+      <input
+        id="filterFromDate"
+        class="calendar-filter__input"
+        type="date"
+        formControlName="fromDate"
+        (click)="openDatePicker($event)"
+        (focus)="openDatePicker($event)"
+        (change)="onMobileFilterRangeChange()"
+      />
+      <span class="calendar-filter__sep" aria-hidden="true">→</span>
+      <label class="calendar-filter__label" for="filterToDate">{{ 'calendar.filter.toDate' | translate }}</label>
+      <input
+        id="filterToDate"
+        class="calendar-filter__input"
+        type="date"
+        formControlName="toDate"
+        (click)="openDatePicker($event)"
+        (focus)="openDatePicker($event)"
+        (change)="onMobileFilterRangeChange()"
+      />
+      <button type="submit" class="btn btn-primary btn-sm">{{ 'calendar.filter.search' | translate }}</button>
+      @if (dateFilterActive()) {
+        <button type="button" class="btn btn-ghost btn-sm" (click)="clearDateFilter()">
+          {{ 'calendar.filter.clear' | translate }}
+        </button>
+        <span class="calendar-filter__active">{{ dateFilterActiveLabel() }}</span>
+      }
+    </form>
+
+    @if (dateFilterError()) {
+      <div class="alert alert-error calendar-filter__error">{{ dateFilterError() }}</div>
+    }
+  </div>
+
+  <div
+    class="calendar-card"
+    [class.calendar-card--filter-results]="showVerticalDayList()"
+  >
     @if (loading()) {
-      <div class="calendar-loading">Đang tải...</div>
+      <div class="calendar-loading">{{ 'calendar.loading' | translate }}</div>
     }
 
-    <div
-      id="study-calendar"
-      class="sr-calendar fc fc-media-screen fc-direction-ltr fc-theme-standard"
-    >
-      <full-calendar [options]="calendarOptions" [events]="events()"></full-calendar>
-    </div>
+    @if (showVerticalDayList()) {
+      @if (isMobileView()) {
+        <nav class="calendar-mobile-nav" [attr.aria-label]="'calendar.mobile.nav' | translate">
+          @if (showMobileListNavControls()) {
+            <div class="calendar-mobile-nav__controls">
+              <button type="button" class="btn btn-primary btn-sm" (click)="shiftMobileList(-1)">
+                {{ 'calendar.fc.prev' | translate }}
+              </button>
+              <button type="button" class="btn btn-primary btn-sm" (click)="shiftMobileList(1)">
+                {{ 'calendar.fc.next' | translate }}
+              </button>
+              <button type="button" class="btn btn-primary btn-sm" (click)="mobileListGoToday()">
+                {{ 'calendar.fc.today' | translate }}
+              </button>
+            </div>
+          }
+          <h2 class="calendar-mobile-nav__title">{{ mobileListTitle() }}</h2>
+          @if (mobileListMode() === 'list') {
+            <p class="calendar-mobile-nav__hint">{{ 'calendar.mobile.listHint' | translate }}</p>
+          }
+          <div class="calendar-mobile-nav__modes">
+            <button
+              type="button"
+              class="btn btn-sm"
+              [class.btn-primary]="mobileListMode() === 'week'"
+              [class.btn-ghost]="mobileListMode() !== 'week'"
+              (click)="setMobileListMode('week')"
+            >
+              {{ 'calendar.fc.week' | translate }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm"
+              [class.btn-primary]="mobileListMode() === 'month'"
+              [class.btn-ghost]="mobileListMode() !== 'month'"
+              (click)="setMobileListMode('month')"
+            >
+              {{ 'calendar.fc.month' | translate }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm"
+              [class.btn-primary]="mobileListMode() === 'list'"
+              [class.btn-ghost]="mobileListMode() !== 'list'"
+              (click)="setMobileListMode('list')"
+            >
+              {{ 'calendar.fc.list' | translate }}
+            </button>
+          </div>
+        </nav>
+      }
+
+      <div class="calendar-filter-results">
+        @for (group of verticalDayGroups(); track group.date) {
+          <section class="calendar-filter-results__day">
+            <div class="calendar-filter-results__date-row">
+              <h3 class="calendar-filter-results__date">{{ formatVerticalDayHeading(group.date) }}</h3>
+              @if (!readOnly) {
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm calendar-filter-results__add"
+                  [attr.aria-label]="'calendar.mobile.addTopic' | translate"
+                  (click)="openCreateTopic(group.date)"
+                >
+                  + {{ 'calendar.mobile.addTopic' | translate }}
+                </button>
+              }
+            </div>
+            @if (group.events.length === 0) {
+              <p class="calendar-filter-results__day-empty">{{ 'calendar.mobile.noEvents' | translate }}</p>
+            } @else {
+              <div class="calendar-filter-results__list">
+                @for (event of group.events; track event.id) {
+                  <button
+                    type="button"
+                    class="calendar-filter-results__item"
+                    [ngStyle]="getTopicColorVars(event.extendedProps.topicId)"
+                    (click)="openFilteredEvent(event)"
+                  >
+                    <span class="calendar-filter-results__time">{{ formatEventTimeRange(event) }}</span>
+                    <span class="calendar-filter-results__title">{{ event.title }}</span>
+                  </button>
+                }
+              </div>
+            }
+          </section>
+        }
+      </div>
+
+      @if (isMobileView() && !readOnly) {
+        <button
+          type="button"
+          class="calendar-fab"
+          [attr.aria-label]="'calendar.addTopic' | translate"
+          (click)="openCreateTopic(todayDate())"
+        >
+          +
+        </button>
+      }
+    } @else {
+      <div
+        id="study-calendar"
+        class="sr-calendar fc fc-media-screen fc-direction-ltr fc-theme-standard"
+      >
+        <full-calendar [options]="calendarOptions" [events]="events()"></full-calendar>
+      </div>
+    }
   </div>
 </div>
 
@@ -44,29 +185,40 @@
     @switch (modalMode()) {
       @case ('daily-events') {
         <div class="modal__header">
-          <h2>{{ formatDailyListDate(selectedDate() ?? '') }}</h2>
-          <button type="button" class="modal__close" aria-label="Close daily list" (click)="closeModal()">×</button>
+          <div class="modal__header-text">
+            <span class="modal__eyebrow">{{ 'calendar.dailyEvents' | translate }}</span>
+            <h2>{{ formatDailyListDate(selectedDate() ?? '') }}</h2>
+          </div>
+          <button
+            type="button"
+            class="modal__close"
+            [attr.aria-label]="'calendar.dailyEvents.close' | translate"
+            (click)="closeModal()"
+          >
+            ×
+          </button>
         </div>
         <div class="modal__body daily-events-panel">
           @if (dailyEvents().length === 0) {
-            <p class="calendar-page__hint">Không có event trong ngày này.</p>
+            <p class="calendar-page__hint">{{ 'calendar.dailyEvents.empty' | translate }}</p>
           } @else {
             @if (getDailyStudyEvents().length > 0) {
               <section class="daily-events-section">
-                <h3 class="daily-events-section__title">STUDY</h3>
+                <h3 class="daily-events-section__title">{{ 'calendar.dailyEvents.studySection' | translate }}</h3>
                 <ul class="daily-events-list">
                   @for (event of getDailyStudyEvents(); track event.id) {
                     <li>
                       <button
                         type="button"
                         [class]="getDailyEventClass(event)"
+                        [ngStyle]="getDailyEventStyle(event)"
                         [attr.aria-label]="getDailyEventAriaLabel(event)"
                         (click)="openDailyEventItem(event)"
                       >
                         <span class="daily-event-item__icon" aria-hidden="true">{{ getDailyEventIcon(event) }}</span>
                         <span class="daily-event-item__body">
                           <span class="daily-event-item__title">{{ event.extendedProps.topicTitle }}</span>
-                          <span class="daily-event-item__meta">Study session</span>
+                          <span class="daily-event-item__meta">{{ 'calendar.dailyEvents.studySession' | translate }}</span>
                         </span>
                       </button>
                     </li>
@@ -77,13 +229,14 @@
 
             @if (getDailyReviewEvents().length > 0) {
               <section class="daily-events-section">
-                <h3 class="daily-events-section__title">REVIEWS</h3>
+                <h3 class="daily-events-section__title">{{ 'calendar.dailyEvents.reviewsSection' | translate }}</h3>
                 <ul class="daily-events-list">
                   @for (event of getDailyReviewEvents(); track event.id) {
                     <li>
                       <button
                         type="button"
                         [class]="getDailyEventClass(event)"
+                        [ngStyle]="getDailyEventStyle(event)"
                         [attr.aria-label]="getDailyEventAriaLabel(event)"
                         (click)="openDailyEventItem(event)"
                       >
@@ -100,50 +253,82 @@
             }
           }
 
-          @if (!readOnly) {
-            <div class="modal__footer">
-              <button
-                type="button"
-                class="btn btn-primary btn-block"
-                aria-label="Add study topic for this day"
-                (click)="openCreateTopic(selectedDate() ?? '')"
-              >
-                Add Study Topic
-              </button>
-            </div>
-          }
         </div>
+        @if (!readOnly) {
+          <div class="modal__footer modal__footer--stack">
+            <button
+              type="button"
+              class="btn btn-primary btn-block"
+              [attr.aria-label]="'calendar.dailyEvents.addTopic' | translate"
+              (click)="openCreateTopic(selectedDate() ?? '')"
+            >
+              {{ 'calendar.addTopic' | translate }}
+            </button>
+          </div>
+        }
       }
 
       @case ('create-topic') {
         <div class="modal__header">
-          <h2>Add Study Topic</h2>
+          <div class="modal__header-text">
+            <span class="modal__eyebrow">{{ 'nav.calendar' | translate }}</span>
+            <h2>{{ 'calendar.addTopic' | translate }}</h2>
+          </div>
           <button type="button" class="modal__close" (click)="closeModal()">×</button>
         </div>
-        <form [formGroup]="topicForm" (ngSubmit)="submitCreateTopic()" class="modal__body">
+        <form [formGroup]="topicForm" (ngSubmit)="submitCreateTopic()" class="modal__form">
+          <div class="modal__body">
           <div class="form-group">
-            <label for="title">Title <sup class="required">*</sup></label>
-            <input id="title" type="text" formControlName="title" placeholder="English - Daily Routine" />
+            <label for="title">
+              {{ 'calendar.form.title' | translate }} <sup class="required">{{ 'app.required' | translate }}</sup>
+            </label>
+            <input
+              id="title"
+              type="text"
+              formControlName="title"
+              [placeholder]="'calendar.form.titlePlaceholder' | translate"
+            />
           </div>
           <div class="form-group">
-            <label for="study_date">Study Date <sup class="required">*</sup></label>
+            <label for="study_date">
+              {{ 'calendar.form.studyDate' | translate }} <sup class="required">{{ 'app.required' | translate }}</sup>
+            </label>
             <input id="study_date" type="date" formControlName="study_date" />
           </div>
           <div class="form-group">
-            <label for="subject">Subject</label>
+            <label for="subject">{{ 'calendar.form.subject' | translate }}</label>
             <input id="subject" type="text" formControlName="subject" />
           </div>
           <div class="form-group">
-            <label for="notes">Notes</label>
+            <label for="notes">{{ 'calendar.form.notes' | translate }}</label>
             <textarea id="notes" formControlName="notes" rows="3"></textarea>
           </div>
           <div class="form-group">
-            <label for="resource_url">Resource URL</label>
+            <label for="resource_url">{{ 'calendar.form.resourceUrl' | translate }}</label>
             <input id="resource_url" type="url" formControlName="resource_url" />
           </div>
+          <div class="form-row form-row--time">
+            <div class="form-group">
+              <label for="study_start_time">{{ 'calendar.form.studyStartTime' | translate }}</label>
+              <input id="study_start_time" type="time" formControlName="study_start_time" />
+            </div>
+            <div class="form-group">
+              <label for="study_end_time">{{ 'calendar.form.studyEndTime' | translate }}</label>
+              <input id="study_end_time" type="time" formControlName="study_end_time" />
+            </div>
+          </div>
+          @if (topicForm.errors?.['studyTimeRange']) {
+            <div class="alert alert-error">{{ 'calendar.error.studyTimeRange' | translate }}</div>
+          }
+          <div class="form-group">
+            <label for="reminder_time">{{ 'calendar.form.reminderTime' | translate }}</label>
+            <input id="reminder_time" type="time" formControlName="reminder_time" />
+            <span class="field-hint">{{ 'calendar.form.reminderTimeHint' | translate }}</span>
+          </div>
+          </div>
           <div class="modal__footer">
-            <button type="button" class="btn btn-ghost" (click)="closeModal()">Cancel</button>
-            <button type="submit" class="btn btn-primary" [disabled]="loading()">Create Topic</button>
+            <button type="button" class="btn btn-ghost" (click)="closeModal()">{{ 'calendar.btn.cancel' | translate }}</button>
+            <button type="submit" class="btn btn-primary" [disabled]="loading()">{{ 'calendar.btn.createTopic' | translate }}</button>
           </div>
         </form>
       }
@@ -151,43 +336,60 @@
       @case ('topic-detail') {
         @if (selectedTopic(); as topic) {
           <div class="modal__header">
-            <h2>Topic Detail · {{ topic.title }}</h2>
+            <div class="modal__header-text">
+              <span class="modal__eyebrow">{{ 'calendar.topicDetail' | translate }}</span>
+              <h2>{{ topic.title }}</h2>
+            </div>
             <button type="button" class="modal__close" (click)="closeModal()">×</button>
           </div>
           <div class="modal__body">
-            <dl class="detail-list">
-              <dt>Title</dt>
-              <dd>{{ topic.title }}</dd>
-              <dt>Study Date</dt>
-              <dd>{{ formatDate(topic.study_date) }}</dd>
-              <dt>Subject</dt>
-              <dd>{{ topic.subject || '—' }}</dd>
-              <dt>Notes</dt>
-              <dd>{{ topic.description || '—' }}</dd>
-              <dt>Resource</dt>
-              <dd>
-                @if (topic.resource_url) {
-                  <a [href]="topic.resource_url" target="_blank" rel="noopener">{{ topic.resource_url }}</a>
-                } @else {
-                  —
-                }
-              </dd>
-            </dl>
+            <div class="info-grid">
+              <div class="info-cell">
+                <span class="info-cell__label">{{ 'calendar.detail.studyDate' | translate }}</span>
+                <span class="info-cell__value">{{ formatDate(topic.study_date) }}</span>
+              </div>
+              <div class="info-cell">
+                <span class="info-cell__label">{{ 'calendar.detail.subject' | translate }}</span>
+                <span class="info-cell__value">{{ topic.subject || ('app.empty' | translate) }}</span>
+              </div>
+              <div class="info-cell">
+                <span class="info-cell__label">{{ 'calendar.detail.studyTime' | translate }}</span>
+                <span class="info-cell__value">{{ formatStudyTimeRangeDisplay(topic) }}</span>
+              </div>
+              <div class="info-cell">
+                <span class="info-cell__label">{{ 'calendar.detail.reminderTime' | translate }}</span>
+                <span class="info-cell__value">{{ formatReminderTimeDisplay(topic.reminder_time) }}</span>
+              </div>
+              @if (topic.description) {
+                <div class="info-cell info-cell--full">
+                  <span class="info-cell__label">{{ 'calendar.detail.notes' | translate }}</span>
+                  <span class="info-cell__value">{{ topic.description }}</span>
+                </div>
+              }
+              @if (topic.resource_url) {
+                <div class="info-cell info-cell--full">
+                  <span class="info-cell__label">{{ 'calendar.detail.resource' | translate }}</span>
+                  <span class="info-cell__value">
+                    <a [href]="topic.resource_url" target="_blank" rel="noopener">{{ topic.resource_url }}</a>
+                  </span>
+                </div>
+              }
+            </div>
 
             @if (getTopicProgress(); as progress) {
               <section class="progress-section">
-                <h3>Review Progress</h3>
+                <h3>{{ 'calendar.progress.title' | translate }}</h3>
                 <div class="progress-grid">
                   <div class="progress-card">
-                    <span class="progress-label">Completed</span>
+                    <span class="progress-label">{{ 'calendar.progress.completed' | translate }}</span>
                     <span class="progress-value">{{ progress.completedCount }} / {{ progress.totalSteps }}</span>
                   </div>
                   <div class="progress-card">
-                    <span class="progress-label">Current Step</span>
+                    <span class="progress-label">{{ 'calendar.progress.currentStep' | translate }}</span>
                     <span class="progress-value">{{ progress.currentStepLabel }}</span>
                   </div>
                   <div class="progress-card">
-                    <span class="progress-label">Next Review</span>
+                    <span class="progress-label">{{ 'calendar.progress.nextReview' | translate }}</span>
                     <span class="progress-value">
                       @if (progress.nextReviewLabel) {
                         {{ progress.nextReviewLabel }}
@@ -195,7 +397,7 @@
                           · {{ formatDate(progress.nextReviewDate) }}
                         }
                       } @else {
-                        —
+                        {{ 'app.empty' | translate }}
                       }
                     </span>
                   </div>
@@ -204,22 +406,29 @@
             }
 
             <section class="schedule-section">
-              <h3>Full Schedule</h3>
+              <h3>{{ 'calendar.schedule.full' | translate }}</h3>
               <app-schedule-timeline
                 [reviews]="getSortedReviews()"
                 [currentStepOffset]="currentStepOffset() ?? 0"
                 [readOnly]="true"
               />
             </section>
-
-            @if (!readOnly) {
-              <div class="modal__actions">
-                <button type="button" class="btn btn-ghost" (click)="openEditTopic()">Edit Topic</button>
-                <button type="button" class="btn btn-primary" (click)="openEditSchedule()">Edit Schedule</button>
-                <button type="button" class="btn btn-danger" (click)="deleteTopic()">Delete Topic</button>
-              </div>
-            }
           </div>
+          @if (!readOnly) {
+            <div class="modal__footer modal__footer--between">
+              <button type="button" class="btn btn-danger btn-sm" (click)="deleteTopic()">
+                {{ 'calendar.btn.deleteTopic' | translate }}
+              </button>
+              <div class="modal__footer-group">
+                <button type="button" class="btn btn-ghost" (click)="openEditTopic()">
+                  {{ 'calendar.btn.editTopic' | translate }}
+                </button>
+                <button type="button" class="btn btn-primary" (click)="openEditSchedule()">
+                  {{ 'calendar.btn.editSchedule' | translate }}
+                </button>
+              </div>
+            </div>
+          }
         }
       }
 
@@ -227,43 +436,53 @@
         @if (selectedTopic(); as topic) {
           @if (selectedReview(); as review) {
             <div class="modal__header">
-              <h2>Review Detail · {{ reviewScheduleService.offsetLabel(review.day_offset) }}</h2>
+              <div class="modal__header-text">
+                <span class="modal__eyebrow">{{ 'calendar.reviewDetail' | translate }}</span>
+                <h2>{{ reviewScheduleService.offsetLabel(review.day_offset) }} · {{ topic.title }}</h2>
+              </div>
               <button type="button" class="modal__close" (click)="closeModal()">×</button>
             </div>
             <div class="modal__body">
-              <dl class="detail-list">
-                <dt>Topic</dt>
-                <dd>{{ topic.title }}</dd>
-                <dt>Study Date</dt>
-                <dd>{{ formatDate(topic.study_date) }}</dd>
-                <dt>Step</dt>
-                <dd>{{ review.step_order }} / {{ getTotalSteps() }}</dd>
-                <dt>Interval</dt>
-                <dd>{{ reviewScheduleService.offsetLabel(review.day_offset) }}</dd>
-                <dt>Scheduled Date</dt>
-                <dd>{{ formatDate(review.review_date) }}</dd>
-                <dt>Status</dt>
-                <dd>
-                  <span class="badge" [class]="'badge--' + getReviewUiState(review).toLowerCase()">
-                    {{ getReviewUiState(review) }}
-                  </span>
-                  <span class="badge badge-db">{{ review.status }}</span>
-                </dd>
-                @if (review.completed_at) {
-                  <dt>Completed At</dt>
-                  <dd>{{ formatDate(review.completed_at.split('T')[0]) }}</dd>
-                }
-              </dl>
-
-              @if (!readOnly && review.status === ReviewStatus.PENDING) {
-                <div class="modal__actions">
-                  <button type="button" class="btn btn-success" (click)="completeReview()">
-                    Mark as Completed
-                  </button>
-                  <button type="button" class="btn btn-ghost" (click)="openEditSchedule()">Edit Schedule</button>
+              <div class="info-grid">
+                <div class="info-cell">
+                  <span class="info-cell__label">{{ 'calendar.detail.scheduledDate' | translate }}</span>
+                  <span class="info-cell__value">{{ formatDate(review.review_date) }}</span>
                 </div>
-              }
+                <div class="info-cell">
+                  <span class="info-cell__label">{{ 'calendar.detail.step' | translate }}</span>
+                  <span class="info-cell__value">{{ review.step_order }} / {{ getTotalSteps() }}</span>
+                </div>
+                <div class="info-cell">
+                  <span class="info-cell__label">{{ 'calendar.detail.interval' | translate }}</span>
+                  <span class="info-cell__value">{{ reviewScheduleService.offsetLabel(review.day_offset) }}</span>
+                </div>
+                <div class="info-cell">
+                  <span class="info-cell__label">{{ 'calendar.detail.status' | translate }}</span>
+                  <span class="info-cell__value">
+                    <span class="badge" [class]="'badge--' + getReviewUiState(review).toLowerCase()">
+                      {{ translateReviewState(review) }}
+                    </span>
+                    <span class="badge badge-db">{{ translateReviewStatus(review.status) }}</span>
+                  </span>
+                </div>
+                @if (review.completed_at) {
+                  <div class="info-cell info-cell--full">
+                    <span class="info-cell__label">{{ 'calendar.detail.completedAt' | translate }}</span>
+                    <span class="info-cell__value">{{ formatDate(review.completed_at.split('T')[0]) }}</span>
+                  </div>
+                }
+              </div>
             </div>
+            @if (!readOnly && review.status === ReviewStatus.PENDING) {
+              <div class="modal__footer">
+                <button type="button" class="btn btn-ghost" (click)="openEditSchedule()">
+                  {{ 'calendar.btn.editSchedule' | translate }}
+                </button>
+                <button type="button" class="btn btn-success" (click)="completeReview()">
+                  {{ 'calendar.btn.markCompleted' | translate }}
+                </button>
+              </div>
+            }
           }
         }
       }
@@ -271,12 +490,17 @@
       @case ('edit-schedule') {
         @if (selectedTopic(); as topic) {
           <div class="modal__header">
-            <h2>Edit Schedule · {{ topic.title }}</h2>
+            <div class="modal__header-text">
+              <span class="modal__eyebrow">{{ 'calendar.editSchedule' | translate }}</span>
+              <h2>{{ topic.title }}</h2>
+            </div>
             <button type="button" class="modal__close" (click)="backToTopicDetail()">×</button>
           </div>
           <div class="modal__body">
             <div class="form-group current-step-picker">
-              <label for="currentStep">Current Step <sup class="required">*</sup></label>
+              <label for="currentStep">
+                {{ 'calendar.currentStep' | translate }} <sup class="required">{{ 'app.required' | translate }}</sup>
+              </label>
               <select
                 id="currentStep"
                 [value]="currentStepOffset() ?? ''"
@@ -299,74 +523,104 @@
               (replaceStep)="openReplaceStep($event)"
               (deleteStep)="deleteFutureStep($event)"
             />
-
-            @if (!readOnly) {
-              <div class="edit-schedule__actions">
-                <button type="button" class="btn btn-primary" (click)="openAddStep()">Add Step</button>
-                <button type="button" class="btn btn-ghost" (click)="backToTopicDetail()">Back to Topic</button>
-              </div>
-            }
           </div>
+          @if (!readOnly) {
+            <div class="modal__footer modal__footer--between">
+              <button type="button" class="btn btn-ghost" (click)="backToTopicDetail()">
+                {{ 'calendar.btn.backToTopic' | translate }}
+              </button>
+              <button type="button" class="btn btn-primary" (click)="openAddStep()">
+                {{ 'calendar.btn.addStep' | translate }}
+              </button>
+            </div>
+          }
         }
       }
 
       @case ('edit-topic') {
         <div class="modal__header">
-          <h2>Edit Topic</h2>
+          <div class="modal__header-text">
+            <span class="modal__eyebrow">{{ 'calendar.editTopic' | translate }}</span>
+            <h2>{{ selectedTopic()?.title }}</h2>
+          </div>
           <button type="button" class="modal__close" (click)="backFromEditTopic()">×</button>
         </div>
-        <form [formGroup]="editTopicForm" (ngSubmit)="submitEditTopic()" class="modal__body">
+        <form [formGroup]="editTopicForm" (ngSubmit)="submitEditTopic()" class="modal__form">
+          <div class="modal__body">
           <div class="form-group">
-            <label for="editTitle">Title</label>
+            <label for="editTitle">{{ 'calendar.form.title' | translate }}</label>
             <input id="editTitle" type="text" formControlName="title" />
           </div>
           <div class="form-group">
-            <label for="editSubject">Subject</label>
+            <label for="editSubject">{{ 'calendar.form.subject' | translate }}</label>
             <input id="editSubject" type="text" formControlName="subject" />
           </div>
           <div class="form-group">
-            <label for="editNotes">Notes</label>
+            <label for="editNotes">{{ 'calendar.form.notes' | translate }}</label>
             <textarea id="editNotes" formControlName="notes" rows="3"></textarea>
           </div>
           <div class="form-group">
-            <label for="editResourceUrl">Resource URL</label>
+            <label for="editResourceUrl">{{ 'calendar.form.resourceUrl' | translate }}</label>
             <input id="editResourceUrl" type="url" formControlName="resource_url" />
           </div>
+          <div class="form-row form-row--time">
+            <div class="form-group">
+              <label for="editStudyStartTime">{{ 'calendar.form.studyStartTime' | translate }}</label>
+              <input id="editStudyStartTime" type="time" formControlName="study_start_time" />
+            </div>
+            <div class="form-group">
+              <label for="editStudyEndTime">{{ 'calendar.form.studyEndTime' | translate }}</label>
+              <input id="editStudyEndTime" type="time" formControlName="study_end_time" />
+            </div>
+          </div>
+          @if (editTopicForm.errors?.['studyTimeRange']) {
+            <div class="alert alert-error">{{ 'calendar.error.studyTimeRange' | translate }}</div>
+          }
+          <div class="form-group">
+            <label for="editReminderTime">{{ 'calendar.form.reminderTime' | translate }}</label>
+            <input id="editReminderTime" type="time" formControlName="reminder_time" />
+            <span class="field-hint">{{ 'calendar.form.reminderTimeHint' | translate }}</span>
+          </div>
+          </div>
           <div class="modal__footer">
-            <button type="button" class="btn btn-ghost" (click)="backFromEditTopic()">Back</button>
-            <button type="submit" class="btn btn-primary" [disabled]="loading()">Save</button>
+            <button type="button" class="btn btn-ghost" (click)="backFromEditTopic()">{{ 'calendar.btn.back' | translate }}</button>
+            <button type="submit" class="btn btn-primary" [disabled]="loading()">{{ 'calendar.btn.save' | translate }}</button>
           </div>
         </form>
       }
 
       @case ('add-step') {
         <div class="modal__header">
-          <h2>Add Step</h2>
+          <div class="modal__header-text">
+            <span class="modal__eyebrow">{{ 'calendar.editSchedule' | translate }}</span>
+            <h2>{{ 'calendar.addStep' | translate }}</h2>
+          </div>
           <button type="button" class="modal__close" (click)="backFromScheduleAction()">×</button>
         </div>
-        <form [formGroup]="addStepForm" (ngSubmit)="submitAddStep()" class="modal__body add-step-form">
+        <form [formGroup]="addStepForm" (ngSubmit)="submitAddStep()" class="modal__form add-step-form">
+          <div class="modal__body">
           <div class="form-group">
-            <label>Current Step</label>
+            <label>{{ 'calendar.addStep.currentStep' | translate }}</label>
             <div class="add-step-form__readonly">
               {{ reviewScheduleService.offsetLabel(currentStepOffset() ?? 0) }}
             </div>
           </div>
           <div class="form-group">
-            <label for="addOffset">Add future step</label>
+            <label for="addOffset">{{ 'calendar.addStep.label' | translate }}</label>
             <div class="add-step-form__offset-input">
-              <span>N +</span>
+              <span>{{ 'calendar.addStep.nPlus' | translate }}</span>
               <input id="addOffset" type="number" formControlName="dayOffset" min="1" />
             </div>
           </div>
           @if (getAddStepPreview(); as preview) {
             <div class="add-step-form__preview" [class.add-step-form__preview--invalid]="!preview.valid">
               <div class="preview-row">
-                <span class="preview-label">Interval:</span>
+                <span class="preview-label">{{ 'calendar.addStep.previewInterval' | translate }}</span>
                 <span>{{ preview.intervalLabel }}</span>
               </div>
               @if (preview.reviewDate) {
                 <div class="preview-row">
-                  <span class="preview-label">Review Date:</span>
+                  <span class="preview-label">{{ 'calendar.addStep.previewDate' | translate }}</span>
                   <span>{{ formatDate(preview.reviewDate) }}</span>
                 </div>
               }
@@ -375,10 +629,11 @@
               }
             </div>
           }
+          </div>
           <div class="modal__footer">
-            <button type="button" class="btn btn-ghost" (click)="backFromScheduleAction()">Back</button>
+            <button type="button" class="btn btn-ghost" (click)="backFromScheduleAction()">{{ 'calendar.btn.back' | translate }}</button>
             <button type="submit" class="btn btn-primary" [disabled]="loading() || !getAddStepPreview()?.valid">
-              Add Step
+              {{ 'calendar.btn.addStep' | translate }}
             </button>
           </div>
         </form>
@@ -386,20 +641,25 @@
 
       @case ('replace-step') {
         <div class="modal__header">
-          <h2>Replace Step</h2>
+          <div class="modal__header-text">
+            <span class="modal__eyebrow">{{ 'calendar.editSchedule' | translate }}</span>
+            <h2>{{ 'calendar.replaceStep' | translate }}</h2>
+          </div>
           <button type="button" class="modal__close" (click)="backFromScheduleAction()">×</button>
         </div>
-        <form [formGroup]="replaceStepForm" (ngSubmit)="submitReplaceStep()" class="modal__body">
-          <div class="form-group">
-            <label for="replaceOffset">New interval (N + ?)</label>
-            <input id="replaceOffset" type="number" formControlName="dayOffset" min="1" />
+        <form [formGroup]="replaceStepForm" (ngSubmit)="submitReplaceStep()" class="modal__form">
+          <div class="modal__body">
+            <div class="form-group">
+              <label for="replaceOffset">{{ 'calendar.replaceStep.newInterval' | translate }}</label>
+              <input id="replaceOffset" type="number" formControlName="dayOffset" min="1" />
+            </div>
+            @if (scheduleError()) {
+              <div class="alert alert-error">{{ scheduleError() }}</div>
+            }
           </div>
-          @if (scheduleError()) {
-            <div class="alert alert-error">{{ scheduleError() }}</div>
-          }
           <div class="modal__footer">
-            <button type="button" class="btn btn-ghost" (click)="backFromScheduleAction()">Back</button>
-            <button type="submit" class="btn btn-primary" [disabled]="loading()">Replace</button>
+            <button type="button" class="btn btn-ghost" (click)="backFromScheduleAction()">{{ 'calendar.btn.back' | translate }}</button>
+            <button type="submit" class="btn btn-primary" [disabled]="loading()">{{ 'calendar.btn.replace' | translate }}</button>
           </div>
         </form>
       }

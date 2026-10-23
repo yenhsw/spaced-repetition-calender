@@ -1,49 +1,81 @@
 <div class="auth-page">
-  <div class="auth-card">
-    <h1>Đăng ký</h1>
-    <p class="auth-subtitle">Tạo tài khoản Spaced Repetition</p>
+  <div class="auth-page__lang">
+    <app-language-switcher />
+  </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()">
-      <div class="form-group">
-        <label for="displayName">Tên hiển thị</label>
-        <input id="displayName" type="text" formControlName="displayName" autocomplete="name" />
-        @if (form.controls.displayName.touched && form.controls.displayName.invalid) {
-          <span class="field-error">Tên hiển thị tối thiểu 2 ký tự</span>
+  <aside class="auth-page__brand" aria-hidden="true">
+    <div class="auth-brand">
+      <div class="auth-brand__logo" aria-hidden="true">📚</div>
+      <h2 class="auth-brand__title">{{ 'app.title' | translate }}</h2>
+      <p class="auth-brand__desc">{{ 'calendar.hintDesktop' | translate }}</p>
+      <ul class="auth-brand__features">
+        <li class="auth-brand__feature">
+          <span class="auth-brand__feature-icon">📅</span>
+          <span>{{ 'auth.brand.feature1' | translate }}</span>
+        </li>
+        <li class="auth-brand__feature">
+          <span class="auth-brand__feature-icon">↻</span>
+          <span>{{ 'auth.brand.feature2' | translate }}</span>
+        </li>
+        <li class="auth-brand__feature">
+          <span class="auth-brand__feature-icon">🔔</span>
+          <span>{{ 'auth.brand.feature3' | translate }}</span>
+        </li>
+      </ul>
+    </div>
+  </aside>
+
+  <div class="auth-page__form-wrap">
+    <div class="auth-card">
+      <h1>{{ 'auth.register.title' | translate }}</h1>
+      <p class="auth-subtitle">{{ 'app.title' | translate }}</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <div class="form-group">
+          <label for="username">
+            {{ 'auth.register.username' | translate }} <sup class="required">{{ 'app.required' | translate }}</sup>
+          </label>
+          <input
+            id="username"
+            type="text"
+            formControlName="username"
+            autocomplete="username"
+            [placeholder]="'auth.register.usernamePlaceholder' | translate"
+          />
+          @if (form.controls.username.touched && form.controls.username.invalid) {
+            <span class="field-error">{{ 'auth.register.usernameError' | translate }}</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="displayName">{{ 'auth.register.displayName' | translate }}</label>
+          <input id="displayName" type="text" formControlName="displayName" autocomplete="name" />
+          <span class="field-hint">{{ 'auth.register.displayNameHint' | translate }}</span>
+        </div>
+
+        <div class="form-group">
+          <label for="password">
+            {{ 'auth.register.password' | translate }} <sup class="required">{{ 'app.required' | translate }}</sup>
+          </label>
+          <input id="password" type="password" formControlName="password" autocomplete="new-password" />
+          @if (form.controls.password.touched && form.controls.password.invalid) {
+            <span class="field-error">{{ 'auth.register.passwordError' | translate }}</span>
+          }
+        </div>
+
+        @if (errorMessage()) {
+          <div class="alert alert-error">{{ errorMessage() }}</div>
         }
-      </div>
 
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input id="email" type="email" formControlName="email" autocomplete="email" />
-        @if (form.controls.email.touched && form.controls.email.invalid) {
-          <span class="field-error">Email không hợp lệ</span>
-        }
-      </div>
+        <button type="submit" class="btn btn-primary btn-block" [disabled]="loading()">
+          {{ loading() ? ('auth.register.submitting' | translate) : ('auth.register.submit' | translate) }}
+        </button>
+      </form>
 
-      <div class="form-group">
-        <label for="password">Mật khẩu</label>
-        <input id="password" type="password" formControlName="password" autocomplete="new-password" />
-        @if (form.controls.password.touched && form.controls.password.invalid) {
-          <span class="field-error">Mật khẩu tối thiểu 6 ký tự</span>
-        }
-      </div>
-
-      @if (errorMessage()) {
-        <div class="alert alert-error">{{ errorMessage() }}</div>
-      }
-
-      @if (successMessage()) {
-        <div class="alert alert-success">{{ successMessage() }}</div>
-      }
-
-      <button type="submit" class="btn btn-primary btn-block" [disabled]="loading()">
-        {{ loading() ? 'Đang đăng ký...' : 'Đăng ký' }}
-      </button>
-    </form>
-
-    <p class="auth-footer">
-      Đã có tài khoản?
-      <a routerLink="/login">Đăng nhập</a>
-    </p>
+      <p class="auth-footer">
+        {{ 'auth.register.hasAccount' | translate }}
+        <a routerLink="/login">{{ 'auth.register.loginLink' | translate }}</a>
+      </p>
+    </div>
   </div>
 </div>

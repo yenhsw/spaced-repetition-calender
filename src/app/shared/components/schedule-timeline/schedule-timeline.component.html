@@ -1,4 +1,4 @@
-<div class="schedule-timeline" role="list" aria-label="Review schedule timeline">
+<div class="schedule-timeline" role="list" [attr.aria-label]="'timeline.aria' | translate">
   @for (review of reviews; track review.id; let last = $last) {
     <div
       class="timeline-item"
@@ -19,7 +19,7 @@
           <div class="timeline-item__main">
             <span class="timeline-item__offset">{{ reviewScheduleService.offsetLabel(review.day_offset) }}</span>
             @if (getMarkerLabel(review)) {
-              <span class="timeline-item__badge" [attr.aria-label]="getMarkerLabel(review) + ' step'">
+              <span class="timeline-item__badge" [attr.aria-label]="getMarkerLabel(review)">
                 {{ getMarkerLabel(review) }}
               </span>
             }
@@ -30,7 +30,7 @@
             }
           </div>
           <span class="timeline-item__date">{{ formatDate(review.review_date) }}</span>
-          <span class="timeline-item__step">Step {{ review.step_order }}</span>
+          <span class="timeline-item__step">{{ 'timeline.step' | translate:{ order: review.step_order } }}</span>
         </div>
 
         @if (canEdit(review)) {
@@ -38,18 +38,18 @@
             <button
               type="button"
               class="btn btn-sm btn-ghost"
-              [attr.aria-label]="'Replace ' + reviewScheduleService.offsetLabel(review.day_offset)"
+              [attr.aria-label]="'timeline.replaceAria' | translate:{ label: reviewScheduleService.offsetLabel(review.day_offset) }"
               (click)="replaceStep.emit(review)"
             >
-              Replace
+              {{ 'timeline.replace' | translate }}
             </button>
             <button
               type="button"
               class="btn btn-sm btn-danger"
-              [attr.aria-label]="'Delete ' + reviewScheduleService.offsetLabel(review.day_offset)"
+              [attr.aria-label]="'timeline.deleteAria' | translate:{ label: reviewScheduleService.offsetLabel(review.day_offset) }"
               (click)="deleteStep.emit(review)"
             >
-              Delete
+              {{ 'timeline.delete' | translate }}
             </button>
           </div>
         }

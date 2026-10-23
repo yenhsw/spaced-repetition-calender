@@ -4,7 +4,13 @@
 [functions.send-daily-reminders]
 verify_jwt = false
 
-# Schedule hourly — matches user reminder_time hour in their timezone.
+[functions.send-test-email]
+verify_jwt = true
+
+[functions.trigger-my-reminders]
+verify_jwt = true
+
 # Configure in Supabase Dashboard → Edge Functions → Schedules after deploy:
-#   cron: 0 * * * *
+#   Function: send-daily-reminders
+#   cron: * * * * *   (every minute — send within ~1 min of topic reminder time)
 #   Authorization: Bearer <CRON_SECRET>

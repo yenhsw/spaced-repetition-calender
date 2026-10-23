@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -5,11 +6,14 @@ import { NotificationSettingsService } from '../../../core/services/notification
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationChannel } from '../../../core/enums/notification-channel.enum';
 import { NotificationLog } from '../../../core/models/notification-log.model';
+import { NotificationJobLog } from '../../../core/models/notification-job-log.model';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { TranslationService } from '../../../core/i18n/translation.service';
 
 @Component({
   selector: 'app-notification-settings',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, TranslatePipe, DatePipe],
   templateUrl: './notification-settings.component.html',
   styleUrl: './notification-settings.component.scss',
 })
@@ -17,13 +21,18 @@ export class NotificationSettingsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly notificationService = inject(NotificationSettingsService);
+  private readonly i18n = inject(TranslationService);
   protected readonly authService = inject(AuthService);
 
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
+  protected readonly testingEmail = signal(false);
+  protected readonly triggering = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly successMessage = signal<string | null>(null);
+  protected readonly actionDetails = signal<string | null>(null);
   protected readonly logs = signal<NotificationLog[]>([]);
+  protected readonly jobLogs = signal<NotificationJobLog[]>([]);
   protected readonly targetUserId = signal<string | null>(null);
   protected readonly NotificationChannel = NotificationChannel;
 
@@ -53,6 +62,7 @@ export class NotificationSettingsComponent implements OnInit {
       const userId = this.targetUserId() ?? undefined;
       const settings = await this.notificationService.getSettings(userId);
       const logs = await this.notificationService.getRecentLogs(15, userId);
+      const jobLogs = await this.notificationService.getJobLogs(30, userId);
 
       if (settings) {
         this.form.patchValue({
@@ -65,8 +75,9 @@ export class NotificationSettingsComponent implements OnInit {
       }
 
       this.logs.set(logs);
+      this.jobLogs.set(jobLogs);
     } catch (err: unknown) {
-      this.errorMessage.set(err instanceof Error ? err.message : 'Failed to load settings');
+      this.errorMessage.set(err instanceof Error ? err.message : this.i18n.t('notifications.error.load'));
     } finally {
       this.loading.set(false);
     }
@@ -104,12 +115,58 @@ export class NotificationSettingsComponent implements OnInit {
         },
         this.targetUserId() ?? undefined,
       );
-      this.successMessage.set('Notification settings saved.');
+      this.successMessage.set(this.i18n.t('notifications.success'));
       await this.loadSettings();
+      void this.notificationService.syncReminderSchedules().catch(() => undefined);
     } catch (err: unknown) {
-      this.errorMessage.set(err instanceof Error ? err.message : 'Failed to save settings');
+      this.errorMessage.set(err instanceof Error ? err.message : this.i18n.t('notifications.error.save'));
     } finally {
       this.saving.set(false);
+    }
+  }
+
+  async sendTestEmail(): Promise<void> {
+    this.testingEmail.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    this.actionDetails.set(null);
+
+    try {
+      const result = await this.notificationService.sendTestEmail();
+      this.successMessage.set(result.message);
+      await this.loadSettings();
+    } catch (err: unknown) {
+      this.errorMessage.set(err instanceof Error ? err.message : this.i18n.t('notifications.error.testEmail'));
+    } finally {
+      this.testingEmail.set(false);
+    }
+  }
+
+  async triggerRemindersNow(): Promise<void> {
+    this.triggering.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    this.actionDetails.set(null);
+
+    try {
+      const result = await this.notificationService.triggerRemindersNow();
+      if (result.sent > 0) {
+        this.successMessage.set(this.i18n.t('notifications.triggerSuccess', { count: result.sent }));
+      } else if (result.failed > 0) {
+        this.errorMessage.set(this.i18n.t('notifications.triggerFailed'));
+      } else {
+        this.successMessage.set(this.i18n.t('notifications.triggerSkipped'));
+      }
+
+      if (result.details?.length) {
+        this.actionDetails.set(result.details.join('\n'));
+      }
+
+      await this.loadSettings();
+    } catch (err: unknown) {
+      this.errorMessage.set(err instanceof Error ? err.message : this.i18n.t('notifications.error.trigger'));
+    } finally {
+      this.triggering.set(false);
     }
   }
 

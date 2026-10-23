@@ -1,12 +1,10 @@
 <div class="settings-page">
   <header class="settings-page__header">
     <div>
-      <h1>Notification Settings</h1>
-      <p class="settings-page__hint">
-        Reminders are sent server-side on your schedule. This page only saves your preferences.
-      </p>
+      <h1>{{ 'notifications.title' | translate }}</h1>
+      <p class="settings-page__hint">{{ 'notifications.subtitle' | translate }}</p>
       @if (isAdminView) {
-        <p class="settings-page__admin-note">Admin view — managing another user's notification settings.</p>
+        <p class="settings-page__admin-note">{{ 'notifications.adminNote' | translate }}</p>
       }
     </div>
   </header>
@@ -17,88 +15,136 @@
   @if (successMessage()) {
     <div class="alert alert-success">{{ successMessage() }}</div>
   }
+  @if (actionDetails()) {
+    <pre class="settings-page__details">{{ actionDetails() }}</pre>
+  }
 
   @if (loading()) {
-    <p class="settings-page__hint">Loading...</p>
+    <p class="settings-page__hint">{{ 'app.loading' | translate }}</p>
   } @else {
     <div class="settings-card">
       <form [formGroup]="form" (ngSubmit)="submit()">
         <div class="form-group">
-          <label for="channel">Reminder channel</label>
+          <label for="channel">{{ 'notifications.channel' | translate }}</label>
           <select id="channel" formControlName="channel" aria-describedby="channel-hint">
-            <option [value]="NotificationChannel.NONE">No notification</option>
-            <option [value]="NotificationChannel.EMAIL">Email only</option>
-            <option [value]="NotificationChannel.DISCORD">Discord only</option>
-            <option [value]="NotificationChannel.BOTH">Email + Discord</option>
+            <option [value]="NotificationChannel.NONE">{{ 'notifications.channel.none' | translate }}</option>
+            <option [value]="NotificationChannel.EMAIL">{{ 'notifications.channel.email' | translate }}</option>
+            <option [value]="NotificationChannel.DISCORD">{{ 'notifications.channel.discord' | translate }}</option>
+            <option [value]="NotificationChannel.BOTH">{{ 'notifications.channel.both' | translate }}</option>
           </select>
-          <span id="channel-hint" class="field-hint">
-            Choose how you want to receive review reminders for due reviews.
-          </span>
+          <span id="channel-hint" class="field-hint">{{ 'notifications.channel.hint' | translate }}</span>
         </div>
 
         @if (showEmailFields()) {
           <fieldset class="settings-fieldset">
-            <legend>Email</legend>
+            <legend>{{ 'notifications.email.legend' | translate }}</legend>
             <div class="form-group">
-              <label for="email_destination">Destination email</label>
+              <label for="email_destination">{{ 'notifications.email.destination' | translate }}</label>
               <input
                 id="email_destination"
                 type="email"
                 formControlName="email_destination"
                 autocomplete="email"
-                placeholder="you@example.com"
+                [placeholder]="'notifications.email.destinationPlaceholder' | translate"
               />
             </div>
             <div class="form-group">
-              <label for="email_reminder_time">Reminder time</label>
-              <input id="email_reminder_time" type="time" formControlName="email_reminder_time" />
-              <span class="field-hint">Local time in your selected timezone.</span>
-            </div>
-            <div class="form-group">
-              <label for="email_timezone">Timezone</label>
+              <label for="email_timezone">{{ 'notifications.email.timezone' | translate }}</label>
               <input
                 id="email_timezone"
                 type="text"
                 formControlName="email_timezone"
-                placeholder="Asia/Ho_Chi_Minh"
+                [placeholder]="'notifications.email.timezonePlaceholder' | translate"
               />
-              <span class="field-hint">IANA timezone, e.g. Asia/Ho_Chi_Minh, UTC, America/New_York</span>
+              <span class="field-hint">{{ 'notifications.email.timezoneHint' | translate }}</span>
+              <span class="field-hint">{{ 'notifications.email.timeHint' | translate }}</span>
             </div>
           </fieldset>
         }
 
         @if (showDiscordFields()) {
           <fieldset class="settings-fieldset">
-            <legend>Discord</legend>
+            <legend>{{ 'notifications.discord.legend' | translate }}</legend>
             <div class="form-group">
-              <label for="discord_webhook_url">Webhook URL</label>
+              <label for="discord_webhook_url">{{ 'notifications.discord.webhook' | translate }}</label>
               <input
                 id="discord_webhook_url"
                 type="url"
                 formControlName="discord_webhook_url"
-                placeholder="https://discord.com/api/webhooks/..."
+                [placeholder]="'notifications.discord.webhookPlaceholder' | translate"
                 autocomplete="off"
               />
-              <span class="field-hint">
-                Create a webhook in your Discord channel settings. Only you can see this URL (RLS protected).
-              </span>
+              <span class="field-hint">{{ 'notifications.discord.webhookHint' | translate }}</span>
             </div>
           </fieldset>
         }
 
         <div class="settings-page__actions">
-          <button type="submit" class="btn btn-primary" [disabled]="saving()" aria-label="Save notification settings">
-            {{ saving() ? 'Saving...' : 'Save settings' }}
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="saving()"
+            [attr.aria-label]="'notifications.saveAria' | translate"
+          >
+            {{ saving() ? ('notifications.saving' | translate) : ('notifications.save' | translate) }}
           </button>
         </div>
       </form>
     </div>
 
+    @if (showEmailFields()) {
+      <section class="settings-card settings-card--actions">
+        <h2>{{ 'notifications.testSection' | translate }}</h2>
+        <p class="field-hint">{{ 'notifications.testSectionHint' | translate }}</p>
+        <div class="settings-page__actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            [disabled]="testingEmail()"
+            (click)="sendTestEmail()"
+          >
+            {{ testingEmail() ? ('notifications.testingEmail' | translate) : ('notifications.testEmail' | translate) }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="triggering()"
+            (click)="triggerRemindersNow()"
+          >
+            {{ triggering() ? ('notifications.triggering' | translate) : ('notifications.triggerNow' | translate) }}
+          </button>
+        </div>
+      </section>
+    }
+
     <section class="settings-logs">
-      <h2>Recent delivery log</h2>
-      <p class="field-hint">Read-only history written by the scheduled reminder job.</p>
+      <h2>{{ 'notifications.jobLog' | translate }}</h2>
+      <p class="field-hint">{{ 'notifications.jobLogHint' | translate }}</p>
+      @if (jobLogs().length === 0) {
+        <p class="settings-page__hint">{{ 'notifications.jobLogEmpty' | translate }}</p>
+      } @else {
+        <ul class="log-list log-list--jobs">
+          @for (log of jobLogs(); track log.id) {
+            <li
+              class="log-list__item"
+              [class.log-list__item--failed]="log.level === 'ERROR'"
+              [class.log-list__item--success]="log.level === 'SUCCESS'"
+            >
+              <span class="log-list__channel">{{ log.source }}</span>
+              <span class="log-list__date">{{ log.created_at | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+              <span class="log-list__status">{{ log.level }}</span>
+              <span class="log-list__error">{{ log.message }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="settings-logs">
+      <h2>{{ 'notifications.recentLog' | translate }}</h2>
+      <p class="field-hint">{{ 'notifications.logHint' | translate }}</p>
       @if (logs().length === 0) {
-        <p class="settings-page__hint">No notifications sent yet.</p>
+        <p class="settings-page__hint">{{ 'notifications.logEmpty' | translate }}</p>
       } @else {
         <ul class="log-list">
           @for (log of logs(); track log.id) {

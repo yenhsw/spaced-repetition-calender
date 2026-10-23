@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 
 import { AuthService } from './auth.service';
+import { ProfileService } from './profile.service';
 
 import { StudyTopic } from '../models/study-topic.model';
 import {
@@ -21,6 +22,7 @@ export class StudyTopicService {
   private readonly supabaseService = inject(SupabaseService);
 
   private readonly authService = inject(AuthService);
+  private readonly profileService = inject(ProfileService);
 
 
 
@@ -76,7 +78,10 @@ export class StudyTopicService {
 
     if (!userId) throw new Error('User not authenticated');
 
-
+    const user = this.authService.getCurrentUser();
+    if (user && user.id === userId) {
+      await this.profileService.ensureProfile(user);
+    }
 
     const { data, error } = await this.supabaseService.supabase.rpc(
 
@@ -95,6 +100,18 @@ export class StudyTopicService {
         p_resource_url: payload.resource_url ?? null,
 
         p_user_id: payload.user_id ?? null,
+
+        p_reminder_time: payload.reminder_time
+          ? `${payload.reminder_time.length === 5 ? payload.reminder_time + ':00' : payload.reminder_time}`
+          : undefined,
+
+        p_study_start_time: payload.study_start_time
+          ? `${payload.study_start_time.length === 5 ? payload.study_start_time + ':00' : payload.study_start_time}`
+          : undefined,
+
+        p_study_end_time: payload.study_end_time
+          ? `${payload.study_end_time.length === 5 ? payload.study_end_time + ':00' : payload.study_end_time}`
+          : undefined,
 
       },
 
@@ -127,6 +144,21 @@ export class StudyTopicService {
     if (payload.subject !== undefined) updateData['subject'] = payload.subject;
 
     if (payload.resource_url !== undefined) updateData['resource_url'] = payload.resource_url;
+
+    if (payload.reminder_time !== undefined) {
+      const t = payload.reminder_time;
+      updateData['reminder_time'] = t.length === 5 ? `${t}:00` : t;
+    }
+
+    if (payload.study_start_time !== undefined) {
+      const t = payload.study_start_time;
+      updateData['study_start_time'] = t.length === 5 ? `${t}:00` : t;
+    }
+
+    if (payload.study_end_time !== undefined) {
+      const t = payload.study_end_time;
+      updateData['study_end_time'] = t.length === 5 ? `${t}:00` : t;
+    }
 
     if (payload.current_step_offset !== undefined) {
 

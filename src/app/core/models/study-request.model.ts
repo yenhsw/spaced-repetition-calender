@@ -6,6 +6,10 @@ export interface CreateStudyTopicRequest {
   description?: string | null;
   subject?: string | null;
   resource_url?: string | null;
+  /** HH:MM or HH:MM:SS — defaults to 08:30 on server */
+  reminder_time?: string;
+  study_start_time?: string;
+  study_end_time?: string;
   user_id?: string;
   intervals?: readonly number[];
 }
@@ -15,6 +19,9 @@ export interface UpdateStudyTopicRequest {
   description?: string | null;
   subject?: string | null;
   resource_url?: string | null;
+  reminder_time?: string;
+  study_start_time?: string;
+  study_end_time?: string;
   current_step_offset?: number;
 }
 

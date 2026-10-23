@@ -13,6 +13,11 @@ export interface StudyTopic {
   subject: string | null;
   resource_url: string | null;
   study_date: DateOnly;
+  /** Local time (HH:MM:SS) to send review reminders on due dates. Default 08:30:00 */
+  reminder_time?: string;
+  /** Calendar display: session start/end on study and review dates */
+  study_start_time?: string;
+  study_end_time?: string;
   current_step_offset: number;
   created_at: string;
   updated_at: string;

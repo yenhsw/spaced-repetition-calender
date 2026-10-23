@@ -16,5 +16,8 @@ export interface StudyReview {
     id: string;
     title: string;
     study_date: DateOnly;
+    study_start_time?: string;
+    study_end_time?: string;
+    reminder_time?: string;
   };
 }

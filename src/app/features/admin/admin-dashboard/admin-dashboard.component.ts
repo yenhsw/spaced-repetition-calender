@@ -5,6 +5,8 @@ import { AdminService } from '../../../core/services/admin.service';
 import { UserProfile } from '../../../core/models/profile.model';
 import { UserAdminStats } from '../../../core/models/topic-progress.model';
 import { UserRole } from '../../../core/enums/user-role.enum';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { TranslationService } from '../../../core/i18n/translation.service';
 
 interface ProfileWithStats extends UserProfile {
   stats?: UserAdminStats;
@@ -13,12 +15,13 @@ interface ProfileWithStats extends UserProfile {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, TranslatePipe],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.scss',
 })
 export class AdminDashboardComponent implements OnInit {
   private readonly adminService = inject(AdminService);
+  private readonly i18n = inject(TranslationService);
 
   protected readonly profiles = signal<ProfileWithStats[]>([]);
   protected readonly loading = signal(false);
@@ -49,7 +52,7 @@ export class AdminDashboardComponent implements OnInit {
 
       this.profiles.set(withStats);
     } catch (err: unknown) {
-      this.errorMessage.set(err instanceof Error ? err.message : 'Không tải được danh sách user');
+      this.errorMessage.set(err instanceof Error ? err.message : this.i18n.t('admin.error.load'));
     } finally {
       this.loading.set(false);
     }

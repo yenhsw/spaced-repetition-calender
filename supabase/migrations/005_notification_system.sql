@@ -93,36 +93,44 @@ alter table public.notification_settings enable row level security;
 alter table public.notification_logs enable row level security;
 
 -- notification_settings: own row only (webhook never visible to others)
+drop policy if exists "Users can view own notification settings" on public.notification_settings;
 create policy "Users can view own notification settings"
   on public.notification_settings for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Admins can view all notification settings" on public.notification_settings;
 create policy "Admins can view all notification settings"
   on public.notification_settings for select
   using (public.is_admin());
 
+drop policy if exists "Users can insert own notification settings" on public.notification_settings;
 create policy "Users can insert own notification settings"
   on public.notification_settings for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update own notification settings" on public.notification_settings;
 create policy "Users can update own notification settings"
   on public.notification_settings for update
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+drop policy if exists "Admins can insert notification settings for any user" on public.notification_settings;
 create policy "Admins can insert notification settings for any user"
   on public.notification_settings for insert
   with check (public.is_admin());
 
+drop policy if exists "Admins can update any notification settings" on public.notification_settings;
 create policy "Admins can update any notification settings"
   on public.notification_settings for update
   using (public.is_admin());
 
 -- notification_logs: read-only for clients; writes via service role (Edge Function)
+drop policy if exists "Users can view own notification logs" on public.notification_logs;
 create policy "Users can view own notification logs"
   on public.notification_logs for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Admins can view all notification logs" on public.notification_logs;
 create policy "Admins can view all notification logs"
   on public.notification_logs for select
   using (public.is_admin());

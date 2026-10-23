@@ -42,3 +42,8 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Supabase Edge Function secrets (never commit)
+supabase/functions/.env
+.env
+.env.local

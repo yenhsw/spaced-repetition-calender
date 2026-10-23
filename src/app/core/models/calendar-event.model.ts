@@ -8,7 +8,8 @@ export interface CalendarEvent {
   id: string;
   title: string;
   start: string;
-  allDay: true;
+  end: string;
+  allDay: false;
   backgroundColor: string;
   borderColor: string;
   extendedProps: {

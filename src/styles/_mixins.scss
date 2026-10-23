@@ -3,20 +3,48 @@
 @mixin focus-ring($color: var(--sr-primary)) {
   outline: none;
   border-color: $color;
-  box-shadow: 0 0 0 3px color-mix(in srgb, $color 18%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, $color 20%, transparent);
 }
 
 @mixin card-surface {
   background: var(--sr-surface);
   border: 1px solid var(--sr-border);
   border-radius: var(--sr-radius-lg);
+  box-shadow: var(--sr-shadow-sm);
+}
+
+@mixin card-elevated {
+  @include card-surface;
   box-shadow: var(--sr-shadow-md);
+}
+
+@mixin glass-surface {
+  background: color-mix(in srgb, var(--sr-surface) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--sr-border-strong) 60%, transparent);
 }
 
 @mixin truncate {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+@mixin page-title {
+  margin: 0 0 var(--sr-space-xs);
+  font-size: var(--sr-font-size-xl);
+  font-weight: var(--sr-font-weight-extrabold);
+  letter-spacing: -0.03em;
+  color: var(--sr-text);
+  line-height: 1.15;
+}
+
+@mixin page-subtitle {
+  margin: 0;
+  color: var(--sr-text-secondary);
+  font-size: var(--sr-font-size-sm);
+  line-height: 1.55;
+  max-width: 42rem;
 }
 
 @mixin mobile-only {
@@ -28,5 +56,14 @@
 @mixin desktop-only {
   @include up(tablet) {
     @content;
+  }
+}
+
+@mixin interactive-lift {
+  transition: transform var(--sr-transition-fast), box-shadow var(--sr-transition-base);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: var(--sr-shadow-md);
   }
 }

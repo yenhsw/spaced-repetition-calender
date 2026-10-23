@@ -152,14 +152,17 @@ alter table public.study_topics enable row level security;
 alter table public.study_reviews enable row level security;
 
 -- PROFILES
+drop policy if exists "Users can view own profile" on public.profiles;
 create policy "Users can view own profile"
   on public.profiles for select
   using (auth.uid() = id);
 
+drop policy if exists "Admins can view all profiles" on public.profiles;
 create policy "Admins can view all profiles"
   on public.profiles for select
   using (public.is_admin());
 
+drop policy if exists "Users can update own profile except role" on public.profiles;
 create policy "Users can update own profile except role"
   on public.profiles for update
   using (auth.uid() = id)
@@ -168,68 +171,84 @@ create policy "Users can update own profile except role"
     and role = (select p.role from public.profiles p where p.id = auth.uid())
   );
 
+drop policy if exists "Admins can update any profile" on public.profiles;
 create policy "Admins can update any profile"
   on public.profiles for update
   using (public.is_admin());
 
 -- STUDY TOPICS
+drop policy if exists "Users can view own study topics" on public.study_topics;
 create policy "Users can view own study topics"
   on public.study_topics for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Admins can view all study topics" on public.study_topics;
 create policy "Admins can view all study topics"
   on public.study_topics for select
   using (public.is_admin());
 
+drop policy if exists "Users can insert own study topics" on public.study_topics;
 create policy "Users can insert own study topics"
   on public.study_topics for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Admins can insert study topics for any user" on public.study_topics;
 create policy "Admins can insert study topics for any user"
   on public.study_topics for insert
   with check (public.is_admin());
 
+drop policy if exists "Users can update own study topics" on public.study_topics;
 create policy "Users can update own study topics"
   on public.study_topics for update
   using (auth.uid() = user_id);
 
+drop policy if exists "Admins can update any study topic" on public.study_topics;
 create policy "Admins can update any study topic"
   on public.study_topics for update
   using (public.is_admin());
 
+drop policy if exists "Users can delete own study topics" on public.study_topics;
 create policy "Users can delete own study topics"
   on public.study_topics for delete
   using (auth.uid() = user_id);
 
+drop policy if exists "Admins can delete any study topic" on public.study_topics;
 create policy "Admins can delete any study topic"
   on public.study_topics for delete
   using (public.is_admin());
 
 -- STUDY REVIEWS
+drop policy if exists "Users can view own study reviews" on public.study_reviews;
 create policy "Users can view own study reviews"
   on public.study_reviews for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Admins can view all study reviews" on public.study_reviews;
 create policy "Admins can view all study reviews"
   on public.study_reviews for select
   using (public.is_admin());
 
+drop policy if exists "Users can insert own study reviews" on public.study_reviews;
 create policy "Users can insert own study reviews"
   on public.study_reviews for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Admins can insert study reviews for any user" on public.study_reviews;
 create policy "Admins can insert study reviews for any user"
   on public.study_reviews for insert
   with check (public.is_admin());
 
+drop policy if exists "Users can update own study reviews" on public.study_reviews;
 create policy "Users can update own study reviews"
   on public.study_reviews for update
   using (auth.uid() = user_id);
 
+drop policy if exists "Admins can update any study review" on public.study_reviews;
 create policy "Admins can update any study review"
   on public.study_reviews for update
   using (public.is_admin());
 
+drop policy if exists "Users can delete own future pending reviews" on public.study_reviews;
 create policy "Users can delete own future pending reviews"
   on public.study_reviews for delete
   using (
@@ -238,6 +257,7 @@ create policy "Users can delete own future pending reviews"
     and review_date > current_date
   );
 
+drop policy if exists "Admins can delete future pending reviews" on public.study_reviews;
 create policy "Admins can delete future pending reviews"
   on public.study_reviews for delete
   using (

@@ -12,6 +12,7 @@ export {
   isTodayOrFutureDateOnly,
   formatLongDisplayDate,
   formatShortDisplayDate,
+  formatWeekdayDisplayDate,
   calendarViewRangeInclusive,
 } from './date-only.utils';
 

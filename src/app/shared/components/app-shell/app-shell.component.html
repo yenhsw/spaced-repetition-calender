@@ -1,19 +1,41 @@
 <header class="app-header">
-  <div class="app-header__brand">
-    <a routerLink="/spaced-repetition" class="app-header__logo">Spaced Repetition</a>
+  <div class="app-header__start">
+    <a routerLink="/spaced-repetition" class="app-header__brand">
+      <span class="app-header__logo" aria-hidden="true">📚</span>
+      <span class="app-header__logo-text">{{ 'app.brand' | translate }}</span>
+    </a>
   </div>
 
-  <nav class="app-header__nav">
-    <a routerLink="/spaced-repetition" routerLinkActive="active">Calendar</a>
-    <a routerLink="/settings/notifications" routerLinkActive="active">Notifications</a>
+  <nav class="app-header__nav" aria-label="Main">
+    <a routerLink="/spaced-repetition" routerLinkActive="active">
+      <span class="app-header__nav-icon" aria-hidden="true">📅</span>
+      <span>{{ 'nav.calendar' | translate }}</span>
+    </a>
+    <a routerLink="/settings/notifications" routerLinkActive="active">
+      <span class="app-header__nav-icon" aria-hidden="true">🔔</span>
+      <span>{{ 'nav.notifications' | translate }}</span>
+    </a>
     @if (authService.isAdmin()) {
-      <a routerLink="/admin/users" routerLinkActive="active">Admin</a>
+      <a routerLink="/admin/users" routerLinkActive="active">
+        <span class="app-header__nav-icon" aria-hidden="true">⚙</span>
+        <span>{{ 'nav.admin' | translate }}</span>
+      </a>
     }
   </nav>
 
-  <div class="app-header__user">
-    <span class="app-header__name">{{ authService.profile()?.display_name ?? authService.profile()?.email }}</span>
-    <button type="button" class="btn btn-ghost" (click)="signOut()">Đăng xuất</button>
+  <div class="app-header__end">
+    <app-language-switcher />
+    <div class="app-header__user-chip">
+      <span class="app-header__avatar" aria-hidden="true">
+        {{ (authService.profile()?.display_name ?? authService.profile()?.email ?? '?').charAt(0).toUpperCase() }}
+      </span>
+      <span class="app-header__name">
+        {{ authService.profile()?.display_name ?? authService.profile()?.email }}
+      </span>
+    </div>
+    <button type="button" class="btn btn-ghost btn-sm app-header__signout" (click)="signOut()">
+      {{ 'nav.signOut' | translate }}
+    </button>
   </div>
 </header>
 

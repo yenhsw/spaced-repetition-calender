@@ -18,8 +18,12 @@
 ### 1. Supabase
 
 1. Tạo project trên [Supabase](https://supabase.com)
-2. Chạy migration: `supabase/migrations/001_initial_schema.sql`
-3. (Tuỳ chọn) Tạo admin thủ công:
+2. Chạy các migration trong `supabase/migrations/` (theo thứ tự 001 → 005)
+3. **Auth (bắt buộc cho đăng ký username + mật khẩu):**
+   - Dashboard → **Authentication** → **Providers** → **Email**
+   - Tắt **Confirm email** (app không dùng email thật để đăng nhập)
+   - Nếu bật Confirm email, Supabase sẽ gửi mail tới `@spaced-rep.app` và dễ gặp lỗi `email rate limit exceeded` khi dev
+4. (Tuỳ chọn) Tạo admin thủ công:
 
 ```sql
 update public.profiles set role = 'ADMIN' where email = 'your@email.com';
@@ -104,11 +108,13 @@ Angular **chỉ quản lý preferences** tại `/settings/notifications`. Remind
 
 ### Migration
 
-Chạy `supabase/migrations/005_notification_system.sql` sau các migration trước.
+Chạy `005`, `007`, `008`, `009_review_reminder_schedules.sql` sau các migration trước.
 
-| Bảng | Mô tả |
-|------|-------|
-| `notification_settings` | Channel: `EMAIL` \| `DISCORD` \| `BOTH` \| `NONE` |
+| Bảng / cột | Mô tả |
+|------------|-------|
+| `notification_settings` | Channel: `EMAIL` \| `DISCORD` \| `BOTH` \| `NONE` + timezone |
+| `study_topics.reminder_time` | Giờ nhắc ôn theo topic (mặc định **08:30**, đặt khi tạo topic) |
+| `review_reminder_schedules` | `send_at` = ngày ôn + `reminder_time` (timezone user) |
 | `notification_logs` | Dedup `(review_id, channel, notification_date)` |
 
 ### Edge Function deploy
@@ -118,20 +124,25 @@ supabase secrets set CRON_SECRET=your-random-secret
 supabase secrets set RESEND_API_KEY=re_xxx
 supabase secrets set EMAIL_FROM="Reminders <onboarding@resend.dev>"
 supabase functions deploy send-daily-reminders
+supabase functions deploy send-test-email
+supabase functions deploy trigger-my-reminders
+supabase functions deploy sync-reminder-schedules
 ```
 
-Trong Supabase Dashboard → Edge Functions → **Schedules**:
+Trong app: `/settings/notifications` → **Gửi email thử** / **Chạy nhắc ngay**.
 
-- Cron: `0 * * * *` (hourly)
+**Không poll mỗi phút.** Khi tạo/sửa topic hoặc lưu cài đặt thông báo, app gọi `sync-reminder-schedules`:
+
+1. Tính `send_at` cho mỗi review pending = `review_date` + `study_topics.reminder_time` (theo timezone)
+2. **Email (Resend):** lên lịch gửi đúng `send_at` (`scheduled_at`) trong vòng 30 ngày
+3. **Discord / email quá hạn:** gửi ngay nếu `send_at` đã qua
+
+Cron dự phòng (Supabase Dashboard → Edge Functions → **Schedules** trên `send-daily-reminders`):
+
+- Cron: `0 0 * * *` (1 lần/ngày — gia hạn lịch 30 ngày + xử lý Discord / lỗi)
 - Header: `Authorization: Bearer <CRON_SECRET>`
 
-Function flow mỗi lần chạy:
-
-1. Lấy users có channel ≠ `NONE`
-2. Kiểm tra giờ local (timezone user) khớp `email_reminder_time`
-3. Tìm reviews `PENDING` due **today** (local date)
-4. Gửi Email (Resend) / Discord (user webhook)
-5. Ghi `notification_logs` — không gửi trùng cùng review/channel/ngày
+Không cần cron mỗi phút — email đúng giờ topic nhờ Resend schedule.
 
 **Secrets không bao giờ đưa vào Angular** — chỉ `anon` key ở frontend.
 

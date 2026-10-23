@@ -1,12 +1,22 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { TranslationService } from '../../../core/i18n/translation.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { LanguageSwitcherComponent } from '../../../shared/components/language-switcher/language-switcher.component';
+import { isValidUsername, mapAuthErrorMessage } from '../../../core/utils/auth.utils';
+
+function usernameValidator(control: AbstractControl): ValidationErrors | null {
+  const value = control.value as string;
+  if (!value) return null;
+  return isValidUsername(value) ? null : { invalidUsername: true };
+}
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, TranslatePipe, LanguageSwitcherComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })
@@ -14,13 +24,13 @@ export class LoginComponent {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly i18n = inject(TranslationService);
 
   protected readonly loading = signal(false);
-  protected readonly googleLoading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
 
   protected readonly form = this.fb.nonNullable.group({
-    email: ['', [Validators.required, Validators.email]],
+    username: ['', [Validators.required, usernameValidator]],
     password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
@@ -34,25 +44,13 @@ export class LoginComponent {
     this.errorMessage.set(null);
 
     try {
-      const { email, password } = this.form.getRawValue();
-      await this.authService.signIn(email, password);
+      const { username, password } = this.form.getRawValue();
+      await this.authService.signIn(username, password);
       await this.router.navigate(['/spaced-repetition']);
     } catch (err: unknown) {
-      this.errorMessage.set(err instanceof Error ? err.message : 'Đăng nhập thất bại');
+      this.errorMessage.set(mapAuthErrorMessage(err, this.i18n));
     } finally {
       this.loading.set(false);
-    }
-  }
-
-  async signInWithGoogle(): Promise<void> {
-    this.googleLoading.set(true);
-    this.errorMessage.set(null);
-
-    try {
-      await this.authService.signInWithGoogle();
-    } catch (err: unknown) {
-      this.errorMessage.set(err instanceof Error ? err.message : 'Đăng nhập Google thất bại');
-      this.googleLoading.set(false);
     }
   }
 }
