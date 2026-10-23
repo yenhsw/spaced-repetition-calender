@@ -1,0 +1,34 @@
+{
+  "$schema": "./node_modules/@angular/service-worker/config/schema.json",
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "resources": {
+        "files": ["/index.html", "/manifest.webmanifest", "/icons/*.svg", "/*.css", "/*.js"]
+      }
+    },
+    {
+      "name": "assets",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": ["/**/*.(svg|png|webp|woff2)"]
+      }
+    }
+  ],
+  "dataGroups": [
+    {
+      "name": "supabase-api",
+      "urls": ["https://*.supabase.co/**"],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 64,
+        "maxAge": "0u",
+        "timeout": "10s"
+      }
+    }
+  ],
+  "navigationRequestStrategy": "performance"
+}

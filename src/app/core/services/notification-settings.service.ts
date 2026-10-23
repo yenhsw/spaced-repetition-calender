@@ -56,6 +56,14 @@ export class NotificationSettingsService {
     return data as NotificationSettings;
   }
 
+  async sendTestPush(): Promise<{ ok: boolean; message: string }> {
+    const result = await this.invokeFunction<{ ok?: boolean; message?: string }>('send-test-push');
+    if (!result?.ok) {
+      throw new Error(result?.message ?? this.i18n.t('notifications.error.testPush'));
+    }
+    return { ok: true, message: result.message ?? this.i18n.t('notifications.testPushSuccess') };
+  }
+
   async sendTestEmail(): Promise<{ ok: boolean; message: string }> {
     const result = await this.invokeFunction<{ ok?: boolean; message?: string }>('send-test-email');
     if (!result?.ok) {

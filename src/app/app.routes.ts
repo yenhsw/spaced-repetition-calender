@@ -20,7 +20,14 @@ export const routes: Routes = [
     component: AppShellComponent,
     canActivate: [authGuard],
     children: [
-      { path: '', redirectTo: 'spaced-repetition', pathMatch: 'full' },
+      { path: '', redirectTo: 'spaced-repetition/today', pathMatch: 'full' },
+      {
+        path: 'spaced-repetition/today',
+        loadComponent: () =>
+          import('./features/calendar/today-reviews/today-reviews.component').then(
+            (m) => m.TodayReviewsComponent,
+          ),
+      },
       {
         path: 'spaced-repetition',
         loadComponent: () =>
@@ -66,5 +73,5 @@ export const routes: Routes = [
       },
     ],
   },
-  { path: '**', redirectTo: 'spaced-repetition' },
+  { path: '**', redirectTo: 'spaced-repetition/today' },
 ];

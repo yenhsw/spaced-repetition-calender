@@ -5,6 +5,7 @@ import {
   NotificationSettingsRow,
   runRemindersForUser,
 } from '../_shared/reminders.ts';
+import { getUserPushSubscriptions } from '../_shared/web-push.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,8 +29,7 @@ Deno.serve(async (req) => {
 
   const { data: settingsRows, error: settingsError } = await supabase
     .from('notification_settings')
-    .select('user_id, channel, email_destination, email_timezone, discord_webhook_url')
-    .neq('channel', 'NONE');
+    .select('user_id, channel, email_destination, email_timezone, discord_webhook_url');
 
   if (settingsError) {
     return jsonResponse({ error: settingsError.message }, 500);
@@ -40,6 +40,11 @@ Deno.serve(async (req) => {
   let failed = 0;
 
   for (const settings of (settingsRows ?? []) as NotificationSettingsRow[]) {
+    const pushSubs = await getUserPushSubscriptions(supabase, settings.user_id);
+    if (settings.channel === 'NONE' && pushSubs.length === 0) {
+      skipped++;
+      continue;
+    }
     const result = await runRemindersForUser({
       supabase,
       settings,

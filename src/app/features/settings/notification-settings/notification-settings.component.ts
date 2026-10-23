@@ -4,6 +4,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { NotificationSettingsService } from '../../../core/services/notification-settings.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { PushNotificationService } from '../../../core/services/push-notification.service';
+import { PwaInstallService } from '../../../core/services/pwa-install.service';
 import { NotificationChannel } from '../../../core/enums/notification-channel.enum';
 import { NotificationLog } from '../../../core/models/notification-log.model';
 import { NotificationJobLog } from '../../../core/models/notification-job-log.model';
@@ -23,10 +25,13 @@ export class NotificationSettingsComponent implements OnInit {
   private readonly notificationService = inject(NotificationSettingsService);
   private readonly i18n = inject(TranslationService);
   protected readonly authService = inject(AuthService);
+  protected readonly pushService = inject(PushNotificationService);
+  protected readonly pwaInstall = inject(PwaInstallService);
 
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
   protected readonly testingEmail = signal(false);
+  protected readonly testingPush = signal(false);
   protected readonly triggering = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly successMessage = signal<string | null>(null);
@@ -48,6 +53,7 @@ export class NotificationSettingsComponent implements OnInit {
     const adminUserId = this.route.snapshot.paramMap.get('userId');
     this.targetUserId.set(adminUserId);
     void this.loadSettings();
+    void this.pushService.refreshDeviceState();
   }
 
   get isAdminView(): boolean {
@@ -122,6 +128,58 @@ export class NotificationSettingsComponent implements OnInit {
       this.errorMessage.set(err instanceof Error ? err.message : this.i18n.t('notifications.error.save'));
     } finally {
       this.saving.set(false);
+    }
+  }
+
+  showPushSection(): boolean {
+    return !this.isAdminView;
+  }
+
+  pushStatusMessage(): string | null {
+    switch (this.pushService.supportState()) {
+      case 'blocked':
+        return this.i18n.t('notifications.push.blocked');
+      case 'unsupported':
+        return this.i18n.t('notifications.push.unsupported');
+      case 'no-vapid':
+        return this.i18n.t('notifications.push.noVapid');
+      default:
+        return null;
+    }
+  }
+
+  async togglePush(): Promise<void> {
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    try {
+      if (this.pushService.subscribedOnDevice()) {
+        await this.pushService.unsubscribe();
+        this.successMessage.set(this.i18n.t('notifications.push.disabled'));
+      } else {
+        await this.pushService.subscribe();
+        this.successMessage.set(this.i18n.t('notifications.push.enabled'));
+        void this.notificationService.syncReminderSchedules().catch(() => undefined);
+      }
+    } catch (err: unknown) {
+      this.errorMessage.set(err instanceof Error ? err.message : this.i18n.t('notifications.error.save'));
+    }
+  }
+
+  async sendTestPush(): Promise<void> {
+    this.testingPush.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    this.actionDetails.set(null);
+
+    try {
+      const result = await this.notificationService.sendTestPush();
+      this.successMessage.set(result.message);
+      await this.loadSettings();
+    } catch (err: unknown) {
+      this.errorMessage.set(err instanceof Error ? err.message : this.i18n.t('notifications.error.testPush'));
+    } finally {
+      this.testingPush.set(false);
     }
   }
 

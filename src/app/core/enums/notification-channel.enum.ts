@@ -8,6 +8,7 @@ export enum NotificationChannel {
 export enum NotificationLogChannel {
   EMAIL = 'EMAIL',
   DISCORD = 'DISCORD',
+  WEB_PUSH = 'WEB_PUSH',
 }
 
 export enum NotificationLogStatus {

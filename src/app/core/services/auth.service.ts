@@ -1,8 +1,10 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
+import { Injectable, Injector, signal, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Session, User } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 import { ProfileService } from './profile.service';
+import { PushNotificationService } from './push-notification.service';
+import { TodayCountService } from './today-count.service';
 import { UserProfile } from '../models/profile.model';
 import { UserRole } from '../enums/user-role.enum';
 import { normalizeUsername, usernameToAuthEmail } from '../utils/auth.utils';
@@ -11,6 +13,7 @@ import { normalizeUsername, usernameToAuthEmail } from '../utils/auth.utils';
 export class AuthService {
   private readonly supabaseService = inject(SupabaseService);
   private readonly profileService = inject(ProfileService);
+  private readonly injector = inject(Injector);
   private readonly router = inject(Router);
 
   private readonly sessionSignal = signal<Session | null>(null);
@@ -49,6 +52,7 @@ export class AuthService {
         profile = await this.profileService.ensureProfile(session.user);
       }
       this.profileSignal.set(profile);
+      await this.runPushInitAfterLogin();
     } else {
       this.profileSignal.set(null);
     }
@@ -88,6 +92,7 @@ export class AuthService {
   }
 
   async signOut(): Promise<void> {
+    await this.runPushClearOnLogout();
     const { error } = await this.supabaseService.supabase.auth.signOut();
     if (error) throw error;
     this.profileSignal.set(null);
@@ -97,5 +102,26 @@ export class AuthService {
 
   getCurrentUser(): User | null {
     return this.sessionSignal()?.user ?? null;
+  }
+
+  private async runPushInitAfterLogin(): Promise<void> {
+    try {
+      await this.injector.get(PushNotificationService).initAfterLogin();
+    } catch {
+      /* push optional */
+    }
+  }
+
+  private async runPushClearOnLogout(): Promise<void> {
+    try {
+      await this.injector.get(PushNotificationService).clearAllForUser();
+    } catch {
+      /* push optional */
+    }
+    try {
+      this.injector.get(TodayCountService).clear();
+    } catch {
+      /* optional */
+    }
   }
 }

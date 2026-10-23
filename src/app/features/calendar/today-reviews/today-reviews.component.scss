@@ -1,0 +1,189 @@
+@use '../../../../styles/mixins' as *;
+
+.today-page {
+  animation: sr-fade-in 0.35s ease;
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+.today-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sr-space-md);
+  margin-bottom: var(--sr-space-lg);
+
+  h1 {
+    @include page-title;
+    margin-bottom: 0.25rem;
+  }
+}
+
+.today-page__subtitle {
+  @include page-subtitle;
+}
+
+.today-page__loading {
+  @include page-subtitle;
+}
+
+.today-page__install-hint {
+  @include card-surface;
+  margin-bottom: var(--sr-space-lg);
+  padding: var(--sr-space-md);
+  border-left: 4px solid var(--sr-primary);
+}
+
+.today-page__install-title {
+  margin: 0 0 0.35rem;
+  font-weight: var(--sr-font-weight-semibold);
+}
+
+.today-page__install-steps {
+  margin: 0;
+  color: var(--sr-text-muted);
+  font-size: var(--sr-font-size-sm);
+  line-height: 1.5;
+}
+
+.today-page__banner {
+  margin-bottom: var(--sr-space-md);
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--sr-radius-sm);
+  font-size: var(--sr-font-size-sm);
+  font-weight: var(--sr-font-weight-medium);
+
+  &--overdue {
+    background: var(--sr-overdue-soft);
+    color: var(--sr-overdue);
+  }
+}
+
+.today-page__empty {
+  @include card-surface;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--sr-space-xl) var(--sr-space-lg);
+  gap: var(--sr-space-sm);
+
+  h2 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  p {
+    margin: 0;
+    color: var(--sr-text-muted);
+  }
+}
+
+.today-page__empty-icon {
+  font-size: 2.5rem;
+}
+
+.today-section {
+  margin-bottom: var(--sr-space-xl);
+}
+
+.today-section__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 var(--sr-space-md);
+  font-size: 0.78rem;
+  font-weight: var(--sr-font-weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sr-text-muted);
+}
+
+.today-section__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--sr-primary-soft);
+  color: var(--sr-primary);
+  font-size: 0.72rem;
+}
+
+.today-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sr-space-sm);
+}
+
+.today-card {
+  @include card-surface;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sr-space-sm);
+  padding: var(--sr-space-md);
+  border-left: 4px solid var(--sr-topic-accent, var(--sr-primary));
+
+  &--overdue {
+    border-left-color: var(--sr-overdue);
+  }
+
+  &__body {
+    min-width: 0;
+  }
+
+  &__badge {
+    display: inline-block;
+    margin-bottom: 0.25rem;
+    font-size: 0.68rem;
+    font-weight: var(--sr-font-weight-bold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--sr-text-muted);
+  }
+
+  &__title {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+    font-weight: var(--sr-font-weight-semibold);
+    word-break: break-word;
+  }
+
+  &__meta {
+    margin: 0;
+    font-size: var(--sr-font-size-sm);
+    color: var(--sr-text-muted);
+  }
+
+  &__state {
+    font-weight: var(--sr-font-weight-semibold);
+    color: var(--sr-today);
+
+    &--overdue {
+      color: var(--sr-overdue);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+}
+
+@media (min-width: 480px) {
+  .today-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+
+    &__actions {
+      flex-shrink: 0;
+    }
+  }
+}

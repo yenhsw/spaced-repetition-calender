@@ -1,0 +1,113 @@
+<div class="today-page">
+  <header class="today-page__header">
+    <div>
+      <h1>{{ 'today.title' | translate }}</h1>
+      @if (summary(); as data) {
+        <p class="today-page__subtitle">{{ formatHeading(data.date) }}</p>
+      }
+    </div>
+    <a routerLink="/spaced-repetition" class="btn btn-ghost btn-sm">{{ 'today.openCalendar' | translate }}</a>
+  </header>
+
+  @if (pwaInstall.showIosInstallHint()) {
+    <section class="today-page__install-hint" aria-live="polite">
+      <p class="today-page__install-title">{{ 'pwa.ios.title' | translate }}</p>
+      <p class="today-page__install-steps">{{ 'pwa.ios.steps' | translate }}</p>
+    </section>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">{{ errorMessage() }}</div>
+  }
+
+  @if (loading()) {
+    <p class="today-page__loading">{{ 'today.loading' | translate }}</p>
+  } @else if (summary(); as data) {
+    @if (data.pendingReviewCount === 0 && data.studies.length === 0) {
+      <section class="today-page__empty">
+        <span class="today-page__empty-icon" aria-hidden="true">🎉</span>
+        <h2>{{ 'today.empty.title' | translate }}</h2>
+        <p>{{ 'today.empty.subtitle' | translate }}</p>
+        <a routerLink="/spaced-repetition" class="btn btn-primary">{{ 'today.empty.cta' | translate }}</a>
+      </section>
+    } @else {
+      @if (data.overdueCount > 0) {
+        <div class="today-page__banner today-page__banner--overdue">
+          {{ 'today.overdueBanner' | translate:{ count: data.overdueCount } }}
+        </div>
+      }
+
+      @if (data.studies.length > 0) {
+        <section class="today-section">
+          <h2 class="today-section__title">{{ 'today.studySection' | translate }}</h2>
+          <ul class="today-list">
+            @for (study of data.studies; track study.topicId) {
+              <li class="today-card today-card--study" [ngStyle]="getTopicColorVars(study.topicId)">
+                <div class="today-card__body">
+                  <span class="today-card__badge">{{ 'today.studyBadge' | translate }}</span>
+                  <h3 class="today-card__title">{{ study.topicTitle }}</h3>
+                  @if (formatTimeRange(study)) {
+                    <p class="today-card__meta">{{ formatTimeRange(study) }}</p>
+                  }
+                  @if (study.subject) {
+                    <p class="today-card__meta">{{ study.subject }}</p>
+                  }
+                </div>
+                <a [routerLink]="topicLink(study.topicId)" class="btn btn-ghost btn-sm">
+                  {{ 'today.openTopic' | translate }}
+                </a>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (data.reviews.length > 0) {
+        <section class="today-section">
+          <h2 class="today-section__title">
+            {{ 'today.reviewSection' | translate }}
+            <span class="today-section__count">{{ data.pendingReviewCount }}</span>
+          </h2>
+          <ul class="today-list">
+            @for (review of data.reviews; track review.id) {
+              <li
+                class="today-card today-card--review"
+                [class.today-card--overdue]="review.uiState === ReviewUiState.OVERDUE"
+                [ngStyle]="getTopicColorVars(review.topicId)"
+              >
+                <div class="today-card__body">
+                  <span class="today-card__badge">{{ reviewBadge(review) }}</span>
+                  <h3 class="today-card__title">{{ review.topicTitle }}</h3>
+                  <p class="today-card__meta">
+                    <span
+                      class="today-card__state"
+                      [class.today-card__state--overdue]="review.uiState === ReviewUiState.OVERDUE"
+                    >
+                      {{ reviewStateLabel(review) }}
+                    </span>
+                    @if (formatTimeRange(review)) {
+                      <span> · {{ formatTimeRange(review) }}</span>
+                    }
+                  </p>
+                </div>
+                <div class="today-card__actions">
+                  <button
+                    type="button"
+                    class="btn btn-success btn-sm"
+                    [disabled]="actionLoading() === review.id"
+                    (click)="completeReview(review)"
+                  >
+                    {{ actionLoading() === review.id ? ('today.completing' | translate) : ('today.complete' | translate) }}
+                  </button>
+                  <a [routerLink]="topicLink(review.topicId)" class="btn btn-ghost btn-sm">
+                    {{ 'today.openTopic' | translate }}
+                  </a>
+                </div>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    }
+  }
+</div>

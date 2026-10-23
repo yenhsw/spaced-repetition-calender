@@ -7,7 +7,16 @@
   </div>
 
   <nav class="app-header__nav" aria-label="Main">
-    <a routerLink="/spaced-repetition" routerLinkActive="active">
+    <a routerLink="/spaced-repetition/today" routerLinkActive="active" class="app-header__nav-link">
+      <span class="app-header__nav-icon-wrap">
+        <span class="app-header__nav-icon" aria-hidden="true">☀️</span>
+        @if (todayCount.hasItems()) {
+          <span class="app-header__nav-badge" [attr.aria-hidden]="true">{{ todayCount.badgeLabel() }}</span>
+        }
+      </span>
+      <span>{{ 'nav.today' | translate }}</span>
+    </a>
+    <a routerLink="/spaced-repetition" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
       <span class="app-header__nav-icon" aria-hidden="true">📅</span>
       <span>{{ 'nav.calendar' | translate }}</span>
     </a>
@@ -25,19 +34,53 @@
 
   <div class="app-header__end">
     <app-language-switcher />
-    <div class="app-header__user-chip">
-      <span class="app-header__avatar" aria-hidden="true">
-        {{ (authService.profile()?.display_name ?? authService.profile()?.email ?? '?').charAt(0).toUpperCase() }}
+    <a
+      routerLink="/spaced-repetition/today"
+      class="app-header__user-chip"
+      [attr.aria-label]="todayBadgeAriaLabel()"
+    >
+      <span class="app-header__avatar-wrap">
+        <span class="app-header__avatar" aria-hidden="true">
+          {{ (authService.profile()?.display_name ?? authService.profile()?.email ?? '?').charAt(0).toUpperCase() }}
+        </span>
+        @if (todayCount.hasItems()) {
+          <span class="app-header__avatar-badge" [attr.aria-hidden]="true">{{ todayCount.badgeLabel() }}</span>
+        }
       </span>
       <span class="app-header__name">
         {{ authService.profile()?.display_name ?? authService.profile()?.email }}
       </span>
-    </div>
-    <button type="button" class="btn btn-ghost btn-sm app-header__signout" (click)="signOut()">
-      {{ 'nav.signOut' | translate }}
+    </a>
+    <button
+      type="button"
+      class="app-header__signout"
+      [attr.aria-label]="'nav.signOut' | translate"
+      [title]="'nav.signOut' | translate"
+      (click)="signOut()"
+    >
+      <svg class="app-header__signout-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path
+          fill="currentColor"
+          d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"
+        />
+      </svg>
     </button>
   </div>
 </header>
+
+@if (pwaInstall.canInstall()) {
+  <div class="pwa-install-bar" role="region" [attr.aria-label]="'pwa.installBar' | translate">
+    <p>{{ 'pwa.installBar' | translate }}</p>
+    <div class="pwa-install-bar__actions">
+      <button type="button" class="btn btn-primary btn-sm" (click)="installPwa()">
+        {{ 'pwa.install' | translate }}
+      </button>
+      <button type="button" class="btn btn-ghost btn-sm" (click)="dismissPwa()">
+        {{ 'pwa.dismiss' | translate }}
+      </button>
+    </div>
+  </div>
+}
 
 <main class="app-main">
   <router-outlet />

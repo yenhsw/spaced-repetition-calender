@@ -43,6 +43,7 @@ import { ReviewStatus } from '../../../core/enums/review-status.enum';
 import { ReviewUiState } from '../../../core/enums/review-ui-state.enum';
 import { OffsetPreviewValidation } from '../../../core/services/review-schedule.service';
 import { TopicProgressService } from '../../../core/services/topic-progress.service';
+import { TodayCountService } from '../../../core/services/today-count.service';
 import { TopicProgress } from '../../../core/models/topic-progress.model';
 import { ScheduleTimelineComponent } from '../../../shared/components/schedule-timeline/schedule-timeline.component';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
@@ -116,6 +117,7 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
   private readonly reminderSync = inject(ReminderSyncService);
   protected readonly reviewScheduleService = inject(ReviewScheduleService);
   protected readonly topicProgressService = inject(TopicProgressService);
+  private readonly todayCount = inject(TodayCountService);
 
   protected readonly events = signal<CalendarEvent[]>([]);
   protected readonly loading = signal(false);
@@ -1350,15 +1352,16 @@ export class StudyCalendarComponent implements OnInit, AfterViewInit {
   private async refreshCalendar(): Promise<void> {
     if (this.isMobileView() || this.showVerticalDayList()) {
       await this.refreshVerticalListEvents();
-      return;
+    } else {
+      const api = this.calendarComponent?.getApi();
+      if (api) {
+        const view = api.view;
+        const { fromDate, toDate } = calendarViewRangeInclusive(view.activeStart, view.activeEnd);
+        await this.loadEvents(fromDate, toDate);
+      }
     }
 
-    const api = this.calendarComponent?.getApi();
-    if (api) {
-      const view = api.view;
-      const { fromDate, toDate } = calendarViewRangeInclusive(view.activeStart, view.activeEnd);
-      await this.loadEvents(fromDate, toDate);
-    }
+    void this.todayCount.refresh();
   }
 
   private applyResponsiveCalendarView(mobile: boolean): void {

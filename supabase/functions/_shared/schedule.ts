@@ -11,6 +11,7 @@ import {
   ReminderRunResult,
   writeJobLog,
 } from './reminders.ts';
+import { sendPushToUser } from './web-push.ts';
 
 /** Resend accepts scheduled sends within this window (days). */
 export const RESEND_SCHEDULE_HORIZON_DAYS = 30;
@@ -131,10 +132,27 @@ async function cancelResendEmail(
   }
 }
 
+async function userHasPushSubscriptions(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<boolean> {
+  const { count, error } = await supabase
+    .from('push_subscriptions')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('[schedule] push subscription check failed:', error.message);
+    return false;
+  }
+
+  return (count ?? 0) > 0;
+}
+
 async function alreadySent(
   supabase: SupabaseClient,
   reviewId: string,
-  channel: 'EMAIL' | 'DISCORD',
+  channel: 'EMAIL' | 'DISCORD' | 'WEB_PUSH',
   notificationDate: string,
 ): Promise<boolean> {
   const { data } = await supabase
@@ -153,7 +171,7 @@ async function writeDeliveryLog(
   payload: {
     user_id: string;
     review_id: string;
-    channel: 'EMAIL' | 'DISCORD';
+    channel: 'EMAIL' | 'DISCORD' | 'WEB_PUSH';
     notification_date: string;
     status: 'SENT' | 'FAILED';
     error_message?: string;
@@ -236,6 +254,55 @@ async function sendEmailNow(args: {
   }
 }
 
+async function sendWebPushNow(args: {
+  supabase: SupabaseClient;
+  settings: NotificationSettingsRow;
+  review: DueReviewRow;
+  message: string;
+  topicTitle: string;
+  notificationDate: string;
+}): Promise<{ ok: boolean; error?: string; skipped?: boolean }> {
+  if (await alreadySent(args.supabase, args.review.id, 'WEB_PUSH', args.notificationDate)) {
+    return { ok: true, skipped: true };
+  }
+
+  const pushResult = await sendPushToUser({
+    supabase: args.supabase,
+    userId: args.settings.user_id,
+    payload: {
+      title: 'Spaced Repetition — Review due',
+      body: args.message,
+      url: '/spaced-repetition/today',
+    },
+  });
+
+  if (pushResult.sent > 0) {
+    await writeDeliveryLog(args.supabase, {
+      user_id: args.settings.user_id,
+      review_id: args.review.id,
+      channel: 'WEB_PUSH',
+      notification_date: args.notificationDate,
+      status: 'SENT',
+    });
+    return { ok: true };
+  }
+
+  const errorMessage = pushResult.errors[0] ?? 'No push subscriptions or send failed';
+  if (pushResult.failed > 0 || pushResult.errors.length > 0) {
+    await writeDeliveryLog(args.supabase, {
+      user_id: args.settings.user_id,
+      review_id: args.review.id,
+      channel: 'WEB_PUSH',
+      notification_date: args.notificationDate,
+      status: 'FAILED',
+      error_message: errorMessage,
+    });
+    return { ok: false, error: errorMessage };
+  }
+
+  return { ok: true, skipped: true };
+}
+
 async function sendDiscordNow(args: {
   supabase: SupabaseClient;
   settings: NotificationSettingsRow;
@@ -295,8 +362,9 @@ export async function deliverReviewReminder(args: {
     args.settings.channel === 'EMAIL' || args.settings.channel === 'BOTH';
   const shouldRunDiscord =
     args.settings.channel === 'DISCORD' || args.settings.channel === 'BOTH';
+  const shouldRunPush = await userHasPushSubscriptions(args.supabase, args.settings.user_id);
 
-  if (!shouldRunEmail && !shouldRunDiscord) {
+  if (!shouldRunEmail && !shouldRunDiscord && !shouldRunPush) {
     return 'skipped';
   }
 
@@ -455,6 +523,36 @@ export async function deliverReviewReminder(args: {
     }
   }
 
+  if (shouldRunPush && isDue) {
+    const pushResult = await sendWebPushNow({
+      supabase: args.supabase,
+      settings: args.settings,
+      review: args.review,
+      message,
+      topicTitle,
+      notificationDate,
+    });
+
+    if (pushResult.ok && !pushResult.skipped) {
+      outcome = outcome === 'failed' ? outcome : 'sent';
+      await upsertScheduleRow(args.supabase, {
+        review_id: args.review.id,
+        user_id: args.settings.user_id,
+        send_at: sendAt,
+        status: 'SENT',
+      });
+      await writeJobLog(args.supabase, {
+        user_id: args.settings.user_id,
+        source: args.source,
+        level: 'SUCCESS',
+        message: `Web push sent for ${topicTitle}`,
+        meta: { review_id: args.review.id, send_at: sendAt },
+      });
+    } else if (!pushResult.ok) {
+      outcome = 'failed';
+    }
+  }
+
   return outcome;
 }
 
@@ -482,9 +580,10 @@ export async function syncReminderSchedulesForUser(args: {
   }
 
   const row = settings as NotificationSettingsRow;
-  if (row.channel === 'NONE') {
+  const hasPush = await userHasPushSubscriptions(args.supabase, args.userId);
+  if (row.channel === 'NONE' && !hasPush) {
     result.skipped++;
-    result.details.push('Channel is NONE — reminders not scheduled.');
+    result.details.push('Channel is NONE and no push subscriptions — reminders not scheduled.');
     return result;
   }
 

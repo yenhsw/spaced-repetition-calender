@@ -92,6 +92,48 @@
       </form>
     </div>
 
+    @if (showPushSection()) {
+      <section class="settings-card settings-card--actions">
+        <h2>{{ 'notifications.push.legend' | translate }}</h2>
+        <p class="field-hint">{{ 'notifications.push.hint' | translate }}</p>
+        @if (pwaInstall.showIosInstallHint()) {
+          <p class="field-hint">{{ 'pwa.ios.steps' | translate }}</p>
+        }
+        @if (pushStatusMessage(); as pushMsg) {
+          <div class="alert alert-error">{{ pushMsg }}</div>
+        } @else {
+          <div class="settings-page__actions">
+            <button
+              type="button"
+              class="btn"
+              [class.btn-primary]="!pushService.subscribedOnDevice()"
+              [class.btn-secondary]="pushService.subscribedOnDevice()"
+              [disabled]="pushService.loading()"
+              (click)="togglePush()"
+            >
+              @if (pushService.loading()) {
+                {{ pushService.subscribedOnDevice() ? ('notifications.push.disabling' | translate) : ('notifications.push.enabling' | translate) }}
+              } @else if (pushService.subscribedOnDevice()) {
+                {{ 'notifications.push.disable' | translate }}
+              } @else {
+                {{ 'notifications.push.enable' | translate }}
+              }
+            </button>
+            @if (pushService.subscribedOnDevice()) {
+              <button
+                type="button"
+                class="btn btn-secondary"
+                [disabled]="testingPush()"
+                (click)="sendTestPush()"
+              >
+                {{ testingPush() ? ('notifications.testingPush' | translate) : ('notifications.testPush' | translate) }}
+              </button>
+            }
+          </div>
+        }
+      </section>
+    }
+
     @if (showEmailFields()) {
       <section class="settings-card settings-card--actions">
         <h2>{{ 'notifications.testSection' | translate }}</h2>
