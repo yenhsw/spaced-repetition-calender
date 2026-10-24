@@ -191,17 +191,10 @@ export class StudyTopicService {
 
 
   async deleteTopic(topicId: string): Promise<void> {
-
-    const { error } = await this.supabaseService.supabase
-
-      .from('study_topics')
-
-      .delete()
-
-      .eq('id', topicId);
-
+    const { error } = await this.supabaseService.supabase.rpc('delete_study_topic', {
+      p_topic_id: topicId,
+    });
     if (error) throw error;
-
   }
 
 

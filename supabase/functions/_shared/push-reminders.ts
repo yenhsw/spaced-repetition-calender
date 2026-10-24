@@ -9,12 +9,14 @@ import {
   writeJobLog,
 } from './reminders.ts';
 import {
+  buildReminderTimePushText,
   buildTaskLeadPushText,
   buildTodayPushText,
   DAILY_DIGEST_TIME,
   getTodayTasks,
   isLocalTimeMatch,
   parseClockTime,
+  reminderTimeMatchesDailyDigest,
   subtractMinutesFromClock,
   TASK_LEAD_MINUTES,
   TodayTaskItem,
@@ -114,7 +116,15 @@ function taskLeadFireTime(item: TodayTaskItem): { hour: number; minute: number }
   return subtractMinutesFromClock(start.hour, start.minute, TASK_LEAD_MINUTES);
 }
 
-/** Daily 08:30 digest + per-task push 10 minutes before study_start_time. */
+function reminderTimeDedupKey(item: TodayTaskItem, today: string): string {
+  return `reminder:${item.kind}:${item.id}:${today}`;
+}
+
+function topicReminderFireTime(item: TodayTaskItem): { hour: number; minute: number } | null {
+  return parseClockTime(item.reminderTime);
+}
+
+/** Daily 08:30 digest + lead push 10 min before study_start + topic reminder_time push. */
 export async function processPushRemindersForUser(args: {
   supabase: SupabaseClient;
   settings: NotificationSettingsRow;
@@ -203,6 +213,45 @@ export async function processPushRemindersForUser(args: {
     } else if (delivery === 'failed') {
       result.failed++;
       result.details.push(`Lead reminder failed: ${item.title}`);
+    } else {
+      result.skipped++;
+    }
+
+    if (reminderTimeMatchesDailyDigest(item.reminderTime)) {
+      continue;
+    }
+
+    const reminderAt = topicReminderFireTime(item);
+    if (!reminderAt) continue;
+
+    if (!isLocalTimeMatch(localNow.hour, localNow.minute, reminderAt.hour, reminderAt.minute)) {
+      continue;
+    }
+
+    const reminderPush = buildReminderTimePushText(item);
+    const reminderDelivery = await sendPushOnce({
+      supabase: args.supabase,
+      userId: args.settings.user_id,
+      dedupKey: reminderTimeDedupKey(item, todayStats.today),
+      notificationDate: todayStats.today,
+      title: reminderPush.title,
+      body: reminderPush.body,
+      badgeCount: todayStats.count > 0 ? todayStats.count : undefined,
+    });
+
+    if (reminderDelivery === 'sent') {
+      result.sent++;
+      result.details.push(`Reminder time: ${item.title}`);
+      await writeJobLog(args.supabase, {
+        user_id: args.settings.user_id,
+        source: args.source,
+        level: 'SUCCESS',
+        message: `Topic reminder push sent — ${item.title}`,
+        meta: { item_id: item.id, kind: item.kind, reminder_at: reminderAt },
+      });
+    } else if (reminderDelivery === 'failed') {
+      result.failed++;
+      result.details.push(`Reminder time failed: ${item.title}`);
     } else {
       result.skipped++;
     }

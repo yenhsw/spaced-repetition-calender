@@ -10,6 +10,7 @@ export interface TodayTaskItem {
   title: string;
   startTime: string | null;
   endTime: string | null;
+  reminderTime: string | null;
   kind: 'study' | 'review';
 }
 
@@ -18,6 +19,7 @@ interface StudyTopicRow {
   title: string;
   study_start_time: string | null;
   study_end_time: string | null;
+  reminder_time: string | null;
 }
 
 interface ReviewRow {
@@ -99,13 +101,13 @@ export async function getTodayTasks(args: {
   const [studiesResult, reviewsResult] = await Promise.all([
     args.supabase
       .from('study_topics')
-      .select('id, title, study_start_time, study_end_time')
+      .select('id, title, study_start_time, study_end_time, reminder_time')
       .eq('user_id', args.userId)
       .eq('study_date', today)
       .order('study_start_time', { ascending: true }),
     args.supabase
       .from('study_reviews')
-      .select('id, day_offset, review_date, study_topic:study_topics(title, study_start_time, study_end_time)')
+      .select('id, day_offset, review_date, study_topic:study_topics(title, study_start_time, study_end_time, reminder_time)')
       .eq('user_id', args.userId)
       .eq('status', 'PENDING')
       .lte('review_date', today)
@@ -125,6 +127,7 @@ export async function getTodayTasks(args: {
       title: row.title?.trim() || 'Học',
       startTime: row.study_start_time,
       endTime: row.study_end_time,
+      reminderTime: row.reminder_time,
     });
   }
 
@@ -139,6 +142,7 @@ export async function getTodayTasks(args: {
       title: `${offset} · ${topicTitle}`,
       startTime: topic?.study_start_time ?? null,
       endTime: topic?.study_end_time ?? null,
+      reminderTime: topic?.reminder_time ?? null,
     });
   }
 
@@ -196,4 +200,21 @@ export function buildTaskLeadPushText(item: TodayTaskItem): { title: string; bod
     title: item.title,
     body: `${timeRange} · Bắt đầu sau ${TASK_LEAD_MINUTES} phút`,
   };
+}
+
+export function buildReminderTimePushText(item: TodayTaskItem): { title: string; body: string } {
+  const timeRange = formatTimeRange(item.startTime, item.endTime);
+  const reminderLabel = formatClock(item.reminderTime) || DAILY_DIGEST_TIME;
+  return {
+    title: item.title,
+    body: `${timeRange} · Giờ nhắc ${reminderLabel}`,
+  };
+}
+
+/** Skip per-topic reminder push when it would duplicate the fixed daily digest. */
+export function reminderTimeMatchesDailyDigest(reminderTime?: string | null): boolean {
+  const reminder = parseClockTime(reminderTime ?? DAILY_DIGEST_TIME);
+  const digest = parseClockTime(DAILY_DIGEST_TIME);
+  if (!reminder || !digest) return false;
+  return reminder.hour === digest.hour && reminder.minute === digest.minute;
 }

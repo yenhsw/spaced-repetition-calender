@@ -117,7 +117,7 @@ const en = {
   'calendar.form.studyTimeHint': 'Shown on the calendar list (e.g. 08:00 – 09:30).',
   'calendar.form.reminderTime': 'Reminder time',
   'calendar.form.reminderTimeHint':
-    'On each review due date, notification is sent at this local time (your timezone in Notification Settings). Default: 08:30.',
+    'Push and email reminders for each due item at this local time (timezone in Notification Settings). Also: push 10 min before study start, daily summary at 08:30. Default: 08:30.',
   'calendar.form.titlePlaceholder': 'English - Daily Routine',
   'calendar.detail.studyTime': 'Study time',
   'calendar.detail.reminderTime': 'Reminder time',
@@ -456,7 +456,7 @@ const vi: Record<keyof typeof en, string> = {
   'calendar.form.studyTimeHint': 'Hiển thị trên danh sách lịch (vd. 08:00 – 09:30).',
   'calendar.form.reminderTime': 'Giờ nhắc ôn',
   'calendar.form.reminderTimeHint':
-    'Vào ngày review đến hạn, thông báo gửi lúc giờ này (múi giờ trong Cài đặt thông báo). Mặc định: 08:30.',
+    'Push và email nhắc từng bài đúng giờ này (múi giờ trong Cài đặt thông báo). Thêm: push trước giờ học 10 phút, tổng hợp sáng 08:30. Mặc định: 08:30.',
   'calendar.form.titlePlaceholder': 'English - Daily Routine',
   'calendar.detail.studyTime': 'Giờ học',
   'calendar.detail.reminderTime': 'Giờ nhắc ôn',
