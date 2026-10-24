@@ -41,6 +41,9 @@ export class NotificationSettingsComponent implements OnInit {
   protected readonly targetUserId = signal<string | null>(null);
   protected readonly NotificationChannel = NotificationChannel;
 
+  /** Set true to restore test buttons, debug logs, and API trace output. */
+  protected readonly showDebugUi = false;
+
   protected readonly form = this.fb.nonNullable.group({
     channel: [NotificationChannel.NONE as NotificationChannel, Validators.required],
     email_destination: [''],
@@ -52,6 +55,7 @@ export class NotificationSettingsComponent implements OnInit {
   ngOnInit(): void {
     const adminUserId = this.route.snapshot.paramMap.get('userId');
     this.targetUserId.set(adminUserId);
+    this.pushService.syncSupportState();
     void this.loadSettings();
     void this.pushService.refreshDeviceState();
   }
@@ -68,7 +72,9 @@ export class NotificationSettingsComponent implements OnInit {
       const userId = this.targetUserId() ?? undefined;
       const settings = await this.notificationService.getSettings(userId);
       const logs = await this.notificationService.getRecentLogs(15, userId);
-      const jobLogs = await this.notificationService.getJobLogs(30, userId);
+      const jobLogs = this.showDebugUi
+        ? await this.notificationService.getJobLogs(30, userId)
+        : [];
 
       if (settings) {
         this.form.patchValue({
@@ -135,17 +141,22 @@ export class NotificationSettingsComponent implements OnInit {
     return !this.isAdminView;
   }
 
-  pushStatusMessage(): string | null {
+  pushErrorMessage(): string | null {
     switch (this.pushService.supportState()) {
       case 'blocked':
         return this.i18n.t('notifications.push.blocked');
-      case 'unsupported':
-        return this.i18n.t('notifications.push.unsupported');
       case 'no-vapid':
         return this.i18n.t('notifications.push.noVapid');
       default:
         return null;
     }
+  }
+
+  pushDeviceHint(): string | null {
+    if (this.pushService.supportState() === 'unsupported') {
+      return this.i18n.t('notifications.push.desktopHint');
+    }
+    return null;
   }
 
   async togglePush(): Promise<void> {
@@ -172,11 +183,22 @@ export class NotificationSettingsComponent implements OnInit {
     this.successMessage.set(null);
     this.actionDetails.set(null);
 
+    const debugLines: string[] = [];
+
     try {
       const result = await this.notificationService.sendTestPush();
+      debugLines.push(...result.debugLog);
+      this.actionDetails.set(debugLines.join('\n'));
       this.successMessage.set(result.message);
       await this.loadSettings();
     } catch (err: unknown) {
+      const withLog = err as Error & { debugLog?: string[] };
+      if (withLog.debugLog?.length) {
+        debugLines.push(...withLog.debugLog);
+      }
+      if (debugLines.length) {
+        this.actionDetails.set(debugLines.join('\n'));
+      }
       this.errorMessage.set(err instanceof Error ? err.message : this.i18n.t('notifications.error.testPush'));
     } finally {
       this.testingPush.set(false);

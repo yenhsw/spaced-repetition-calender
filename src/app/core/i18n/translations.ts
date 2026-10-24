@@ -330,6 +330,8 @@ const en = {
   'notifications.push.disabled': 'Push disabled on this device.',
   'notifications.push.blocked': 'Notifications are blocked in browser settings. Allow notifications for this site.',
   'notifications.push.unsupported': 'Push is not supported here. Use Chrome/Edge on Android, or install via Safari on iPhone (iOS 16.4+).',
+  'notifications.push.desktopHint':
+    'Enable push only works on a phone with the app installed (Home Screen). On desktop you can still tap Send test push — it delivers to your phone if push is enabled there.',
   'notifications.push.noVapid': 'Web Push is not configured yet (missing VAPID public key in environment).',
   'notifications.testPush': 'Send test push',
   'notifications.testingPush': 'Sending test push...',
@@ -668,6 +670,8 @@ const vi: Record<keyof typeof en, string> = {
   'notifications.push.disabled': 'Đã tắt push trên thiết bị này.',
   'notifications.push.blocked': 'Trình duyệt đang chặn thông báo. Hãy cho phép thông báo cho trang này.',
   'notifications.push.unsupported': 'Push không hỗ trợ ở đây. Dùng Chrome trên Android, hoặc cài qua Safari trên iPhone (iOS 16.4+).',
+  'notifications.push.desktopHint':
+    'Bật push chỉ hoạt động trên điện thoại đã cài app (Màn hình chính). Trên máy tính vẫn bấm được Gửi push thử — gửi tới iPhone nếu bạn đã bật push ở đó.',
   'notifications.push.noVapid': 'Web Push chưa cấu hình (thiếu VAPID public key trong environment).',
   'notifications.testPush': 'Gửi push thử',
   'notifications.testingPush': 'Đang gửi push thử...',

@@ -13,7 +13,10 @@ verify_jwt = true
 [functions.trigger-my-reminders]
 verify_jwt = true
 
+[functions.sync-reminder-schedules]
+verify_jwt = true
+
 # Configure in Supabase Dashboard → Edge Functions → Schedules after deploy:
 #   Function: send-daily-reminders
-#   cron: * * * * *   (every minute — send within ~1 min of topic reminder time)
+#   cron: * * * * *   (every minute — 08:30 daily digest + task lead 10 min before study_start_time)
 #   Authorization: Bearer <CRON_SECRET>

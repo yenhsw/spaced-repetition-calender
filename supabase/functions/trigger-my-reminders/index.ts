@@ -1,11 +1,8 @@
 /// <reference path="../edge-runtime.d.ts" />
 
-import {
-  createServiceClient,
-  getUserIdFromAuthHeader,
-  NotificationSettingsRow,
-  runRemindersForUser,
-} from '../_shared/reminders.ts';
+import { createServiceClient, getUserIdFromAuthHeader } from '../_shared/auth.ts';
+import { NotificationSettingsRow } from '../_shared/reminders.ts';
+import { runRemindersForUser } from '../_shared/schedule.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

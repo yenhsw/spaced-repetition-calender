@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
-import { FunctionsHttpError } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 import { AuthService } from './auth.service';
+import { environment } from '../../../environments/environment';
 import {
   NotificationSettings,
   UpsertNotificationSettingsRequest,
@@ -56,12 +56,20 @@ export class NotificationSettingsService {
     return data as NotificationSettings;
   }
 
-  async sendTestPush(): Promise<{ ok: boolean; message: string }> {
-    const result = await this.invokeFunction<{ ok?: boolean; message?: string }>('send-test-push');
+  async sendTestPush(): Promise<{ ok: boolean; message: string; debugLog: string[] }> {
+    const { result, log } = await this.invokeFunctionWithDebug<{ ok?: boolean; message?: string }>(
+      'send-test-push',
+    );
     if (!result?.ok) {
-      throw new Error(result?.message ?? this.i18n.t('notifications.error.testPush'));
+      const err = new Error(result?.message ?? this.i18n.t('notifications.error.testPush'));
+      (err as Error & { debugLog?: string[] }).debugLog = log;
+      throw err;
     }
-    return { ok: true, message: result.message ?? this.i18n.t('notifications.testPushSuccess') };
+    return {
+      ok: true,
+      message: result.message ?? this.i18n.t('notifications.testPushSuccess'),
+      debugLog: log,
+    };
   }
 
   async sendTestEmail(): Promise<{ ok: boolean; message: string }> {
@@ -116,54 +124,79 @@ export class NotificationSettingsService {
   }
 
   private async invokeFunction<T>(name: string, body?: Record<string, unknown>): Promise<T> {
+    const { result } = await this.invokeFunctionWithDebug<T>(name, body);
+    return result;
+  }
+
+  private async invokeFunctionWithDebug<T>(
+    name: string,
+    body?: Record<string, unknown>,
+  ): Promise<{ result: T; log: string[] }> {
+    const log: string[] = [];
+    const push = (line: string): void => {
+      console.log(`[edge-fn:${name}] ${line}`);
+      log.push(line);
+    };
+
     const supabase = this.supabaseService.supabase;
     const {
       data: { session },
     } = await supabase.auth.getSession();
 
     if (!session?.access_token) {
+      push('ERROR: no session / access_token');
       throw new Error(this.i18n.t('notifications.error.notAuthenticated'));
     }
 
-    const { data, error } = await supabase.functions.invoke(name, {
-      body: body ?? {},
-      headers: {
-        // Bypass Angular service worker — it can block Edge Function POST on iOS PWA.
-        'ngsw-bypass': 'true',
-      },
-    });
+    push(`session ok (token ${session.access_token.length} chars)`);
+    push(`supabase url: ${environment.supabaseUrl}`);
 
-    if (error) {
-      throw new Error(await this.extractFunctionError(error, data));
-    }
+    const url = `${environment.supabaseUrl}/functions/v1/${name}`;
+    push(`POST ${url}`);
 
-    return data as T;
-  }
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: environment.supabaseAnonKey,
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(body ?? {}),
+      });
 
-  private async extractFunctionError(error: unknown, data: unknown): Promise<string> {
-    if (data && typeof data === 'object') {
-      const payload = data as { message?: string; error?: string };
-      if (payload.message) return payload.message;
-      if (payload.error) return payload.error;
-    }
+      push(`response: HTTP ${response.status} ${response.statusText}`);
 
-    if (error instanceof FunctionsHttpError) {
+      const text = await response.text();
+      push(`body: ${text.slice(0, 400)}${text.length > 400 ? '…' : ''}`);
+
+      let payload: T;
       try {
-        const payload = await error.context.json();
-        if (payload?.message) return String(payload.message);
-        if (payload?.error) return String(payload.error);
+        payload = JSON.parse(text) as T;
       } catch {
-        /* ignore parse errors */
+        throw new Error(`Invalid JSON: ${text.slice(0, 120)}`);
       }
-    }
 
-    if (error instanceof Error && error.message) {
-      if (error.message.includes('Failed to send a request to the Edge Function')) {
-        return this.i18n.t('notifications.error.functionInvoke');
+      if (!response.ok) {
+        const message =
+          (payload as { message?: string })?.message ??
+          (payload as { error?: string })?.error ??
+          `HTTP ${response.status}`;
+        throw new Error(message);
       }
-      return error.message;
+
+      return { result: payload, log };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      push(`fetch failed: ${message}`);
+      const wrapped = new Error(
+        message.includes('Failed to fetch') || message.includes('NetworkError')
+          ? this.i18n.t('notifications.error.functionInvoke')
+          : message,
+      );
+      (wrapped as Error & { debugLog?: string[] }).debugLog = log;
+      throw wrapped;
     }
-    return this.i18n.t('notifications.error.functionInvoke');
   }
 
   async getRecentLogs(limit = 20, userId?: string): Promise<NotificationLog[]> {

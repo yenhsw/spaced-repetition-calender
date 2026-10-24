@@ -11,7 +11,8 @@ import {
   ReminderRunResult,
   writeJobLog,
 } from './reminders.ts';
-import { sendPushToUser } from './web-push.ts';
+import { processPushRemindersForUser } from './push-reminders.ts';
+import { getUserPushSubscriptions } from './web-push.ts';
 
 /** Resend accepts scheduled sends within this window (days). */
 export const RESEND_SCHEDULE_HORIZON_DAYS = 30;
@@ -254,56 +255,6 @@ async function sendEmailNow(args: {
   }
 }
 
-async function sendWebPushNow(args: {
-  supabase: SupabaseClient;
-  settings: NotificationSettingsRow;
-  review: DueReviewRow;
-  message: string;
-  topicTitle: string;
-  notificationDate: string;
-}): Promise<{ ok: boolean; error?: string; skipped?: boolean }> {
-  if (await alreadySent(args.supabase, args.review.id, 'WEB_PUSH', args.notificationDate)) {
-    return { ok: true, skipped: true };
-  }
-
-  const pushResult = await sendPushToUser({
-    supabase: args.supabase,
-    userId: args.settings.user_id,
-    payload: {
-      title: 'Spaced Repetition — Review due',
-      body: args.message,
-      url: '/spaced-repetition/today',
-      badgeCount: 1,
-    },
-  });
-
-  if (pushResult.sent > 0) {
-    await writeDeliveryLog(args.supabase, {
-      user_id: args.settings.user_id,
-      review_id: args.review.id,
-      channel: 'WEB_PUSH',
-      notification_date: args.notificationDate,
-      status: 'SENT',
-    });
-    return { ok: true };
-  }
-
-  const errorMessage = pushResult.errors[0] ?? 'No push subscriptions or send failed';
-  if (pushResult.failed > 0 || pushResult.errors.length > 0) {
-    await writeDeliveryLog(args.supabase, {
-      user_id: args.settings.user_id,
-      review_id: args.review.id,
-      channel: 'WEB_PUSH',
-      notification_date: args.notificationDate,
-      status: 'FAILED',
-      error_message: errorMessage,
-    });
-    return { ok: false, error: errorMessage };
-  }
-
-  return { ok: true, skipped: true };
-}
-
 async function sendDiscordNow(args: {
   supabase: SupabaseClient;
   settings: NotificationSettingsRow;
@@ -363,9 +314,7 @@ export async function deliverReviewReminder(args: {
     args.settings.channel === 'EMAIL' || args.settings.channel === 'BOTH';
   const shouldRunDiscord =
     args.settings.channel === 'DISCORD' || args.settings.channel === 'BOTH';
-  const shouldRunPush = await userHasPushSubscriptions(args.supabase, args.settings.user_id);
-
-  if (!shouldRunEmail && !shouldRunDiscord && !shouldRunPush) {
+  if (!shouldRunEmail && !shouldRunDiscord) {
     return 'skipped';
   }
 
@@ -520,36 +469,6 @@ export async function deliverReviewReminder(args: {
         status: 'SENT',
       });
     } else if (!discordResult.ok) {
-      outcome = 'failed';
-    }
-  }
-
-  if (shouldRunPush && isDue) {
-    const pushResult = await sendWebPushNow({
-      supabase: args.supabase,
-      settings: args.settings,
-      review: args.review,
-      message,
-      topicTitle,
-      notificationDate,
-    });
-
-    if (pushResult.ok && !pushResult.skipped) {
-      outcome = outcome === 'failed' ? outcome : 'sent';
-      await upsertScheduleRow(args.supabase, {
-        review_id: args.review.id,
-        user_id: args.settings.user_id,
-        send_at: sendAt,
-        status: 'SENT',
-      });
-      await writeJobLog(args.supabase, {
-        user_id: args.settings.user_id,
-        source: args.source,
-        level: 'SUCCESS',
-        message: `Web push sent for ${topicTitle}`,
-        meta: { review_id: args.review.id, send_at: sendAt },
-      });
-    } else if (!pushResult.ok) {
       outcome = 'failed';
     }
   }
@@ -809,5 +728,15 @@ export async function runRemindersForUser(args: {
     source,
   });
 
-  return mergeResults(syncResult, dueResult);
+  let pushResult: ReminderRunResult = { sent: 0, skipped: 0, failed: 0, details: [] };
+  const pushSubs = await getUserPushSubscriptions(args.supabase, args.settings.user_id);
+  if (pushSubs.length > 0) {
+    pushResult = await processPushRemindersForUser({
+      supabase: args.supabase,
+      settings: args.settings,
+      source,
+    });
+  }
+
+  return mergeResults(mergeResults(syncResult, dueResult), pushResult);
 }

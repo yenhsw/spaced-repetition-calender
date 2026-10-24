@@ -21,12 +21,24 @@ export interface WebPushPayload {
 
 let vapidConfigured = false;
 
+/** VAPID subject must be a mailto: or https: URL (web-push spec). */
+export function normalizeVapidSubject(raw: string | undefined): string {
+  const value = raw?.trim() || 'mailto:reminders@spaced-rep.app';
+  if (value.startsWith('mailto:') || value.startsWith('https://') || value.startsWith('http://')) {
+    return value;
+  }
+  if (value.includes('@')) {
+    return `mailto:${value}`;
+  }
+  return `mailto:${value}`;
+}
+
 export function configureWebPush(): boolean {
   if (vapidConfigured) return true;
 
   const publicKey = Deno.env.get('VAPID_PUBLIC_KEY');
   const privateKey = Deno.env.get('VAPID_PRIVATE_KEY');
-  const subject = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:reminders@spaced-rep.app';
+  const subject = normalizeVapidSubject(Deno.env.get('VAPID_SUBJECT'));
 
   if (!publicKey?.trim() || !privateKey?.trim()) {
     return false;

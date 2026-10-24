@@ -15,7 +15,7 @@
   @if (successMessage()) {
     <div class="alert alert-success">{{ successMessage() }}</div>
   }
-  @if (actionDetails()) {
+  @if (showDebugUi && actionDetails()) {
     <pre class="settings-page__details">{{ actionDetails() }}</pre>
   }
 
@@ -99,10 +99,14 @@
         @if (pwaInstall.showIosInstallHint()) {
           <p class="field-hint">{{ 'pwa.ios.steps' | translate }}</p>
         }
-        @if (pushStatusMessage(); as pushMsg) {
-          <div class="alert alert-error">{{ pushMsg }}</div>
-        } @else {
-          <div class="settings-page__actions">
+        @if (pushDeviceHint(); as hint) {
+          <p class="field-hint settings-page__push-hint">{{ hint }}</p>
+        }
+        @if (pushErrorMessage(); as pushErr) {
+          <div class="alert alert-error">{{ pushErr }}</div>
+        }
+        <div class="settings-page__actions">
+          @if (pushService.canSubscribeOnDevice()) {
             <button
               type="button"
               class="btn"
@@ -119,22 +123,22 @@
                 {{ 'notifications.push.enable' | translate }}
               }
             </button>
-            @if (pushService.subscribedOnDevice()) {
-              <button
-                type="button"
-                class="btn btn-secondary"
-                [disabled]="testingPush()"
-                (click)="sendTestPush()"
-              >
-                {{ testingPush() ? ('notifications.testingPush' | translate) : ('notifications.testPush' | translate) }}
-              </button>
-            }
-          </div>
-        }
+          }
+          @if (showDebugUi && pushService.canTestPushFromServer()) {
+            <button
+              type="button"
+              class="btn btn-secondary"
+              [disabled]="testingPush()"
+              (click)="sendTestPush()"
+            >
+              {{ testingPush() ? ('notifications.testingPush' | translate) : ('notifications.testPush' | translate) }}
+            </button>
+          }
+        </div>
       </section>
     }
 
-    @if (showEmailFields()) {
+    @if (showDebugUi && showEmailFields()) {
       <section class="settings-card settings-card--actions">
         <h2>{{ 'notifications.testSection' | translate }}</h2>
         <p class="field-hint">{{ 'notifications.testSectionHint' | translate }}</p>
@@ -159,28 +163,30 @@
       </section>
     }
 
-    <section class="settings-logs">
-      <h2>{{ 'notifications.jobLog' | translate }}</h2>
-      <p class="field-hint">{{ 'notifications.jobLogHint' | translate }}</p>
-      @if (jobLogs().length === 0) {
-        <p class="settings-page__hint">{{ 'notifications.jobLogEmpty' | translate }}</p>
-      } @else {
-        <ul class="log-list log-list--jobs">
-          @for (log of jobLogs(); track log.id) {
-            <li
-              class="log-list__item"
-              [class.log-list__item--failed]="log.level === 'ERROR'"
-              [class.log-list__item--success]="log.level === 'SUCCESS'"
-            >
-              <span class="log-list__channel">{{ log.source }}</span>
-              <span class="log-list__date">{{ log.created_at | date:'dd/MM/yyyy HH:mm:ss' }}</span>
-              <span class="log-list__status">{{ log.level }}</span>
-              <span class="log-list__error">{{ log.message }}</span>
-            </li>
-          }
-        </ul>
-      }
-    </section>
+    @if (showDebugUi) {
+      <section class="settings-logs">
+        <h2>{{ 'notifications.jobLog' | translate }}</h2>
+        <p class="field-hint">{{ 'notifications.jobLogHint' | translate }}</p>
+        @if (jobLogs().length === 0) {
+          <p class="settings-page__hint">{{ 'notifications.jobLogEmpty' | translate }}</p>
+        } @else {
+          <ul class="log-list log-list--jobs">
+            @for (log of jobLogs(); track log.id) {
+              <li
+                class="log-list__item"
+                [class.log-list__item--failed]="log.level === 'ERROR'"
+                [class.log-list__item--success]="log.level === 'SUCCESS'"
+              >
+                <span class="log-list__channel">{{ log.source }}</span>
+                <span class="log-list__date">{{ log.created_at | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+                <span class="log-list__status">{{ log.level }}</span>
+                <span class="log-list__error">{{ log.message }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    }
 
     <section class="settings-logs">
       <h2>{{ 'notifications.recentLog' | translate }}</h2>
