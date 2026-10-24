@@ -7,6 +7,9 @@ verify_jwt = false
 [functions.send-test-email]
 verify_jwt = true
 
+[functions.send-test-push]
+verify_jwt = true
+
 [functions.trigger-my-reminders]
 verify_jwt = true
 

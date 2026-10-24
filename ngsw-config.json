@@ -21,7 +21,11 @@
   "dataGroups": [
     {
       "name": "supabase-api",
-      "urls": ["https://*.supabase.co/**"],
+      "urls": [
+        "https://*.supabase.co/rest/v1/**",
+        "https://*.supabase.co/auth/v1/**",
+        "https://*.supabase.co/realtime/v1/**"
+      ],
       "cacheConfig": {
         "strategy": "freshness",
         "maxSize": 64,

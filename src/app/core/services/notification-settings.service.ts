@@ -116,7 +116,22 @@ export class NotificationSettingsService {
   }
 
   private async invokeFunction<T>(name: string, body?: Record<string, unknown>): Promise<T> {
-    const { data, error } = await this.supabaseService.supabase.functions.invoke(name, { body });
+    const supabase = this.supabaseService.supabase;
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      throw new Error(this.i18n.t('notifications.error.notAuthenticated'));
+    }
+
+    const { data, error } = await supabase.functions.invoke(name, {
+      body: body ?? {},
+      headers: {
+        // Bypass Angular service worker — it can block Edge Function POST on iOS PWA.
+        'ngsw-bypass': 'true',
+      },
+    });
 
     if (error) {
       throw new Error(await this.extractFunctionError(error, data));
@@ -142,7 +157,12 @@ export class NotificationSettingsService {
       }
     }
 
-    if (error instanceof Error && error.message) return error.message;
+    if (error instanceof Error && error.message) {
+      if (error.message.includes('Failed to send a request to the Edge Function')) {
+        return this.i18n.t('notifications.error.functionInvoke');
+      }
+      return error.message;
+    }
     return this.i18n.t('notifications.error.functionInvoke');
   }
 

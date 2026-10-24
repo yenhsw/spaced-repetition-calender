@@ -288,7 +288,7 @@ const en = {
   'notifications.error.save': 'Failed to save settings',
   'notifications.error.testEmail': 'Test email failed',
   'notifications.error.trigger': 'Could not run reminders',
-  'notifications.error.functionInvoke': 'Edge function call failed',
+  'notifications.error.functionInvoke': 'Could not reach the server. Check your connection and try again.',
   'notifications.error.emailRequired': 'Email destination is required for Email notifications.',
   'notifications.error.webhookRequired': 'Discord webhook URL is required for Discord notifications.',
   'notifications.error.invalidWebhook': 'Discord webhook URL must be a valid Discord webhook URL.',
@@ -625,7 +625,8 @@ const vi: Record<keyof typeof en, string> = {
   'notifications.error.save': 'Không lưu được cài đặt',
   'notifications.error.testEmail': 'Gửi email thử thất bại',
   'notifications.error.trigger': 'Không chạy được nhắc nhở',
-  'notifications.error.functionInvoke': 'Gọi Edge Function thất bại',
+  'notifications.error.functionInvoke':
+    'Không kết nối được server. Kiểm tra mạng, mở app từ icon Màn hình chính rồi thử lại.',
   'notifications.error.emailRequired': 'Cần nhập email khi chọn thông báo qua Email.',
   'notifications.error.webhookRequired': 'Cần nhập Webhook URL khi chọn thông báo qua Discord.',
   'notifications.error.invalidWebhook': 'Webhook URL phải là URL webhook Discord hợp lệ.',
