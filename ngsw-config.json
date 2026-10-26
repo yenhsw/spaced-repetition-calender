@@ -34,5 +34,5 @@
       }
     }
   ],
-  "navigationRequestStrategy": "performance"
+  "navigationRequestStrategy": "freshness"
 }

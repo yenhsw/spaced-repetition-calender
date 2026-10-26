@@ -18,6 +18,46 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.21/index.global.min.css">
+  <script>
+    (function () {
+      var recoveryKey = 'sw-recovery-reload';
+      var chunkError = /Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i;
+
+      function recoverFromStaleCache() {
+        if (sessionStorage.getItem(recoveryKey)) return;
+        sessionStorage.setItem(recoveryKey, '1');
+        if (!('serviceWorker' in navigator)) {
+          location.reload();
+          return;
+        }
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          return Promise.all(regs.map(function (r) { return r.unregister(); }));
+        }).then(function () {
+          if (!('caches' in window)) return;
+          return caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+          });
+        }).finally(function () {
+          location.reload();
+        });
+      }
+
+      window.addEventListener('error', function (event) {
+        var msg = String(event.message || (event.error && event.error.message) || '');
+        if (chunkError.test(msg)) recoverFromStaleCache();
+      }, true);
+
+      window.addEventListener('unhandledrejection', function (event) {
+        var reason = event.reason;
+        var msg = String(reason && reason.message ? reason.message : reason || '');
+        if (chunkError.test(msg)) recoverFromStaleCache();
+      });
+
+      window.addEventListener('load', function () {
+        sessionStorage.removeItem(recoveryKey);
+      });
+    })();
+  </script>
 </head>
 <body>
   <app-root></app-root>
